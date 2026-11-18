@@ -14,6 +14,8 @@ public interface PlayerRepository extends JpaRepository<Player, Long> {
 
     boolean existsByUsernameIgnoreCase(String username);
 
+    Optional<Player> findByUsernameIgnoreCase(String username);
+
     List<Player> findTop10ByOrderByCookiesDesc();
 
     // Serialize cookie purchases and clicks for the same player.

@@ -1,12 +1,13 @@
 meta {
-  name: Purchase History
+  name: Get Upgrade By ID
   type: http
   seq: 3
 }
 
 get {
-  url: {{baseUrl}}/api/players/{{playerId}}/purchases
-  auth: none
+  url: {{baseUrl}}/api/upgrades/{{upgradeId}}
+  auth: bearer
+  token: {{accessToken}}
 }
 
 tests {

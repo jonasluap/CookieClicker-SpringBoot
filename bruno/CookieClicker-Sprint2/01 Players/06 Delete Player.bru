@@ -6,7 +6,8 @@ meta {
 
 delete {
   url: {{baseUrl}}/api/players/{{playerId}}
-  auth: none
+  auth: bearer
+  token: {{accessToken}}
 }
 
 tests {

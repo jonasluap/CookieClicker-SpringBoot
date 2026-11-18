@@ -27,6 +27,10 @@ public class Player {
     @Column(nullable = false, unique = true, length = 32)
     private String username;
 
+    // Nullable only to keep existing Sprint 1 rows readable; all new accounts require a hash.
+    @Column(name = "password_hash", length = 100)
+    private String passwordHash;
+
     @Column(nullable = false)
     private long cookies = 0;
 

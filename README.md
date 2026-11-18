@@ -1,4 +1,4 @@
-# Cookie Clicker API — Sprint 1
+# Cookie Clicker API — Sprint 2
 
 University project (R3.03 Agile Development) built from the supplied `baseSpringBoot` starter.
 
@@ -6,9 +6,9 @@ University project (R3.03 Agile Development) built from the supplied `baseSpring
 **Repository:** https://github.com/jonasluap/CookieClicker-SpringBoot  
 **Tech stack:** Java 21 · Spring Boot 4.1.1 · Spring Data JPA · PostgreSQL 16 · Docker Compose · Bruno
 
-## Goal (Sprint 1)
+## Goal (Sprints 1–2)
 
-This repository implements a REST API for a future Cookie Clicker browser game. A player earns cookies by clicking and spends them on improvements. This sprint focuses on the backend; **there is no front-end, login/Bearer authentication, advertising network, or external API yet**.
+This repository implements a REST API for a future Cookie Clicker browser game. A player earns cookies by clicking and spends them on improvements. Sprint 1 delivered gameplay and persistence; Sprint 2 adds signup/login and stateless Bearer token authentication.
 
 ### Features
 
@@ -20,7 +20,9 @@ This repository implements a REST API for a future Cookie Clicker browser game. 
 - Input validation, HTTP 200/201/204/400/404/409 and standardized JSON error messages.
 - `Player` **One-to-Many** `Purchase`; `Purchase` **Many-to-One** `Player` and `Upgrade`.
 - Layered architecture: Controller + DTO -> Service interface / implementation -> Repository -> Entity.
-- A Bruno collection (`bruno/CookieClicker-Sprint1/`) covering CRUD and gameplay.
+- A Bruno collection (`bruno/CookieClicker-Sprint2/`) covering signup, authenticated CRUD, and gameplay.
+- Signup/login returning signed JWT access tokens, validated by Spring Security's OAuth2 Resource Server support.
+- Passwords stored as BCrypt hashes; player endpoints require a Bearer token and only the token owner can access that player's account.
 
 **Important rules:** clients cannot set their own cookie balance or buy upgrades without enough cookies. Each click adds `cookiesPerClick` cookies. An upgrade can grant `clickBonus`, `passiveBonus`, or both. `cookiesPerSecond` is **stored but not yet automatically credited over time**; passive production belongs to a later sprint.
 
@@ -28,14 +30,14 @@ This repository implements a REST API for a future Cookie Clicker browser game. 
 
 ```
 src/main/java/com/basespringboot/
-  controller/       PlayerController.java, UpgradeController.java
+  controller/       AuthController.java, PlayerController.java, UpgradeController.java
   dto/              HTTP request and response records (avoid exposing JPA entities)
   entity/           Player.java, Upgrade.java, Purchase.java
   repository/       Spring Data JPA repositories
-  service/          PlayerService.java, UpgradeService.java
+  service/          AuthService.java, TokenService.java, PlayerService.java, UpgradeService.java
   service/impl/     PlayerServiceImpl.java, UpgradeServiceImpl.java
   exception/        Error response and centralized exception handling
-bruno/CookieClicker-Sprint1/   Bruno requests and local environment
+bruno/CookieClicker-Sprint2/   Bruno requests and local environment
 ```
 
 ## Prerequisites
@@ -82,7 +84,27 @@ When you change Java code in a running Docker app, rebuild it with `docker compo
 
 `spring.jpa.hibernate.ddl-auto=update` is used for **development only**; data persists between normal restarts. Use real schema migrations (Flyway/Liquibase) for production. `docker compose down -v` permanently deletes the database volume.
 
-> Security: the default database username/password are **development-only demo credentials**. Change them and use managed secrets before any public deployment. There is **no authentication in Sprint 1**: run this project locally.
+> Security: the default database credentials and JWT signing key are **development-only values**. Set managed secrets before any public deployment; use HTTPS outside local development.
+
+### Authentication and authorization (Sprint 2)
+
+Set a unique random signing key through `JWT_SECRET` in every environment. The included fallback is for local development only. Tokens use HS256 and expire after one hour; passwords are BCrypt-hashed. HTTPS is required outside local development. Signup and login are public; all other API routes require `Authorization: Bearer <accessToken>`. A token can access only its own player routes (`/api/players/{id}`, clicks, purchases, and history). `GET /api/players` returns the authenticated player's profile. The leaderboard and upgrade catalogue are visible to authenticated users.
+
+`POST /api/players` has been replaced by account signup so every new player has credentials. Existing Sprint 1 player rows remain in the database, but have no password hash; create a new account or migrate/reset those rows before logging in as them.
+
+Signup request (`POST /api/auth/signup`, returns 201):
+
+```json
+{ "username": "jonas", "password": "a-long-password" }
+```
+
+Login request (`POST /api/auth/login`, returns 200):
+
+```json
+{ "username": "jonas", "password": "a-long-password" }
+```
+
+Both return `accessToken`, `tokenType` (`Bearer`), `expiresIn` (seconds), `playerId`, and `username`. Use the returned id for player routes and send the token in the `Authorization` header. Signup requires a nonblank username of at most 32 characters, a password of 8–72 characters, and a case-insensitively unique username. Invalid credentials return 401; attempting another player's route returns 403.
 
 ## REST endpoints
 
@@ -90,8 +112,9 @@ When you change Java code in a running Docker app, rebuild it with `docker compo
 
 | HTTP | Path | Response | Description |
 |---|---|---|---|
-| POST | `/api/players` | 201 | Create a player |
-| GET | `/api/players` | 200 | List all players |
+| POST | `/api/auth/signup` | 201 | Create an account and issue a Bearer token |
+| POST | `/api/auth/login` | 200 | Authenticate and issue a Bearer token |
+| GET | `/api/players` | 200 | Get the authenticated player's profile |
 | GET | `/api/players/{id}` | 200 | Get one player |
 | PUT | `/api/players/{id}` | 200 | Update player username |
 | DELETE | `/api/players/{id}` | 204 | Delete player and its purchase history |
@@ -135,22 +158,27 @@ The username must not be blank, cannot exceed 32 characters, and must be unique 
 ### Sample use (curl)
 
 ```bash
-# 1. Create a player; note the returned id.
-curl -i -X POST http://localhost:8080/api/players \
+# 1. Create an account; copy accessToken and playerId from the response.
+curl -i -X POST http://localhost:8080/api/auth/signup \
   -H 'Content-Type: application/json' \
-  -d '{"username":"jonas"}'
+  -d '{"username":"jonas","password":"a-long-password"}'
 
-# 2. Create a cheap upgrade; note its id.
+# 2. Send this header on each protected request.
+curl -i http://localhost:8080/api/players \
+  -H 'Authorization: Bearer <accessToken>'
+
+# Create upgrades as an authenticated user; note the returned id.
 curl -i -X POST http://localhost:8080/api/upgrades \
+  -H 'Authorization: Bearer <accessToken>' \
   -H 'Content-Type: application/json' \
   -d '{"name":"Cursor","description":"More cookies per click","price":2,"clickBonus":2,"passiveBonus":0}'
 
 # Replace 1 with the player ID returned by the API.
-curl -i -X POST http://localhost:8080/api/players/1/click
-curl -i -X POST http://localhost:8080/api/players/1/click
+curl -i -X POST http://localhost:8080/api/players/1/click -H 'Authorization: Bearer <accessToken>'
+curl -i -X POST http://localhost:8080/api/players/1/click -H 'Authorization: Bearer <accessToken>'
 # Replace 1 with the actual upgrade ID if different.
-curl -i -X POST http://localhost:8080/api/players/1/upgrades/1/purchase
-curl -i http://localhost:8080/api/players/1
+curl -i -X POST http://localhost:8080/api/players/1/upgrades/1/purchase -H 'Authorization: Bearer <accessToken>'
+curl -i http://localhost:8080/api/players/1 -H 'Authorization: Bearer <accessToken>'
 ```
 
 ### Errors
@@ -176,9 +204,9 @@ Example response:
 ## Bruno — CRUD verification
 
 1. Open Bruno and choose **Open Collection**.
-2. Select `bruno/CookieClicker-Sprint1`.
+2. Select `bruno/CookieClicker-Sprint2`.
 3. Select the `local` environment (`baseUrl` = `http://localhost:8080`).
-4. Run `01 Players/01 Create Player`; it stores the generated `playerId` as a runtime variable.
+4. Run `01 Players/01 Create Player` to sign up, or `01 Players/00 Login` if the account already exists; each stores `playerId` and `accessToken` as runtime variables.
 5. Run `02 Upgrades/01 Create Upgrade`; it stores the generated `upgradeId`.
 6. Run the GET/PUT/Click/Purchase requests. Run two clicks before purchase (the sample upgrade costs 2 cookies).
 7. Use the DELETE requests last; deleting an upgrade that has been purchased intentionally returns HTTP 409.
@@ -208,9 +236,8 @@ This smoke test creates disposable sample data and cleans it up. Full formal HTT
 - [ ] Publish this repository and share its URL with the instructor / on Discord according to the course instructions.
 - [ ] Be ready to explain controllers, DTOs, transactions, JPA relations, status codes and request validation.
 
-### Proposed Sprint 2+
+### Proposed Sprint 3+
 
-- Sprint 2: signup/login with Bearer authentication and authorization.
 - Future: automatic cookie production, front end, external free API, a **simulated** rewarded-ad flow, monitoring and load tests.
 
-The backend is intentionally not publicly exposed until access control is implemented. Third-party advertising platforms have their own policies; the planned reward system is only a future concept.
+Third-party advertising platforms have their own policies; the planned reward system is only a future concept.

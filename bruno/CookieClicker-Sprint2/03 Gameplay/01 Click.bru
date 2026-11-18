@@ -6,7 +6,8 @@ meta {
 
 post {
   url: {{baseUrl}}/api/players/{{playerId}}/click
-  auth: none
+  auth: bearer
+  token: {{accessToken}}
 }
 
 tests {

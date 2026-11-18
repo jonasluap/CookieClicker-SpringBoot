@@ -6,7 +6,8 @@ meta {
 
 get {
   url: {{baseUrl}}/api/upgrades
-  auth: none
+  auth: bearer
+  token: {{accessToken}}
 }
 
 tests {

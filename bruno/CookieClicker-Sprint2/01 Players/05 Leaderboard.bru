@@ -6,7 +6,8 @@ meta {
 
 get {
   url: {{baseUrl}}/api/players/leaderboard
-  auth: none
+  auth: bearer
+  token: {{accessToken}}
 }
 
 tests {

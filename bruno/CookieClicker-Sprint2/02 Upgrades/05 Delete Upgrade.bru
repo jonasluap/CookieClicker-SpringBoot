@@ -6,7 +6,8 @@ meta {
 
 delete {
   url: {{baseUrl}}/api/upgrades/{{upgradeId}}
-  auth: none
+  auth: bearer
+  token: {{accessToken}}
 }
 
 tests {

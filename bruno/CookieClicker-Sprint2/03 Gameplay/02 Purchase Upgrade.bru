@@ -6,7 +6,8 @@ meta {
 
 post {
   url: {{baseUrl}}/api/players/{{playerId}}/upgrades/{{upgradeId}}/purchase
-  auth: none
+  auth: bearer
+  token: {{accessToken}}
 }
 
 tests {

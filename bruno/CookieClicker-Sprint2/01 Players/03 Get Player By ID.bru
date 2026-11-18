@@ -1,12 +1,13 @@
 meta {
-  name: Get All Players
+  name: Get Player By ID
   type: http
-  seq: 2
+  seq: 3
 }
 
 get {
-  url: {{baseUrl}}/api/players
-  auth: none
+  url: {{baseUrl}}/api/players/{{playerId}}
+  auth: bearer
+  token: {{accessToken}}
 }
 
 tests {
