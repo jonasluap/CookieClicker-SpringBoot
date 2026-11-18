@@ -1,0 +1,16 @@
+meta {
+  name: Get Upgrade By ID
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/upgrades/{{upgradeId}}
+  auth: none
+}
+
+tests {
+  test("HTTP 200", function() {
+    expect(res.status).to.equal(200);
+  });
+}

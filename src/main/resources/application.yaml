@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: baseSpringBoot
+    name: cookie-clicker-api
 
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:base_db}
@@ -13,9 +13,6 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create-drop
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
+      ddl-auto: update # For classroom development only. Prefer migrations in production.
+    show-sql: false
     open-in-view: false

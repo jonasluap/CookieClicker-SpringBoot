@@ -1,0 +1,16 @@
+meta {
+  name: Get All Players
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/players
+  auth: none
+}
+
+tests {
+  test("HTTP 200", function() {
+    expect(res.status).to.equal(200);
+  });
+}

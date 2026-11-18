@@ -1,0 +1,16 @@
+meta {
+  name: Get Player By ID
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/players/{{playerId}}
+  auth: none
+}
+
+tests {
+  test("HTTP 200", function() {
+    expect(res.status).to.equal(200);
+  });
+}

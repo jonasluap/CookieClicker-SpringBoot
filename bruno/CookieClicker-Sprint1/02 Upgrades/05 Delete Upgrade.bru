@@ -1,0 +1,16 @@
+meta {
+  name: Delete Upgrade
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/api/upgrades/{{upgradeId}}
+  auth: none
+}
+
+tests {
+  test("HTTP 204", function() {
+    expect(res.status).to.equal(204);
+  });
+}

@@ -1,0 +1,16 @@
+meta {
+  name: Leaderboard
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/players/leaderboard
+  auth: none
+}
+
+tests {
+  test("HTTP 200", function() {
+    expect(res.status).to.equal(200);
+  });
+}

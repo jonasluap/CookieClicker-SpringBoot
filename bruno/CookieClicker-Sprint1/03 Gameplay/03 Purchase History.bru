@@ -1,0 +1,16 @@
+meta {
+  name: Purchase History
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/players/{{playerId}}/purchases
+  auth: none
+}
+
+tests {
+  test("HTTP 200", function() {
+    expect(res.status).to.equal(200);
+  });
+}

@@ -1,0 +1,31 @@
+meta {
+  name: Update Upgrade
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/api/upgrades/{{upgradeId}}
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "Test Cursor Updated",
+    "description": "Extra cookie power",
+    "price": 2,
+    "clickBonus": 2,
+    "passiveBonus": 0
+  }
+}
+
+tests {
+  test("HTTP 200", function() {
+    expect(res.status).to.equal(200);
+  });
+}
