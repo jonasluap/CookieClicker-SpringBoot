@@ -2,7 +2,7 @@
 
 University project (R3.03 Agile Development) built from the supplied `baseSpringBoot` starter.
 
-**Team:** _Add every team member's full name here before submission._  
+**Team:** LUAP Jonas, YMAMOU Younais, ESSALHI Adel
 **Repository:** https://github.com/jonasluap/CookieClicker-SpringBoot  
 **Tech stack:** Java 21 · Spring Boot 4.1.1 · Spring Data JPA · PostgreSQL 16 · Docker Compose · Bruno
 
