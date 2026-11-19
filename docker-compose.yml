@@ -50,5 +50,3 @@ services:
 
 volumes:
   postgres_data:
-
-ma · vous

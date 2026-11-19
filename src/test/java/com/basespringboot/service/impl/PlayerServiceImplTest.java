@@ -2,6 +2,7 @@ package com.basespringboot.service.impl;
 
 import com.basespringboot.dto.PlayerRequest;
 import com.basespringboot.entity.Player;
+import com.basespringboot.entity.PlayerWeather;
 import com.basespringboot.entity.Purchase;
 import com.basespringboot.entity.Upgrade;
 import com.basespringboot.exception.ConflictException;
@@ -15,6 +16,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -53,6 +55,38 @@ class PlayerServiceImplTest {
         var result = playerService.click(1L);
 
         assertEquals(12, result.cookies());
+    }
+
+    @Test
+    void activeWeatherAddsCookiesToClicksAndPassiveProduction() {
+        when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(player));
+        var rain = new PlayerWeather("Paris", 12.5, 63, Instant.now().plusSeconds(3600));
+
+        var updated = playerService.updateWeather(1L, rain);
+        var clicked = playerService.click(1L);
+        var collected = playerService.collectPassiveCookies(1L);
+
+        assertEquals(2, updated.weather().bonus());
+        assertEquals(4, clicked.cookiesPerClick());
+        assertEquals(14, clicked.cookies());
+        assertEquals(2, collected.cookiesPerSecond());
+        assertEquals(16, collected.cookies());
+        assertEquals(2, player.getCookiesPerClick());
+        assertEquals(0, player.getCookiesPerSecond());
+    }
+
+    @Test
+    void expiredWeatherRestoresBaseProduction() {
+        when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(player));
+        player.setCookiesPerSecond(1);
+        player.setWeather(new PlayerWeather("Paris", 12.5, 95, Instant.now().minusSeconds(1)));
+
+        var collected = playerService.collectPassiveCookies(1L);
+
+        assertEquals(0, collected.weather().bonus());
+        assertEquals(2, collected.cookiesPerClick());
+        assertEquals(1, collected.cookiesPerSecond());
+        assertEquals(11, collected.cookies());
     }
 
     @Test

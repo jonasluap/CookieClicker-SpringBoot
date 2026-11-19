@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#17120f">
   <title>Cookie Clicker — Fournée infinie</title>
-  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <main class="shell">
     <header class="topbar">
-      <a class="brand" href="/"><span class="brand-mark">✦</span> FOURNÉE <span class="brand-light">INFINIE</span></a>
+      <a class="brand" href="./"><span class="brand-mark">✦</span> FOURNÉE <span class="brand-light">INFINIE</span></a>
       <div class="account"><span id="account-name">Invité</span><button id="logout" class="link-button hidden">Déconnexion</button></div>
     </header>
 
@@ -23,7 +23,7 @@
       </div>
       <div class="auth-card">
         <div class="auth-tabs"><button class="tab active" data-mode="login">Connexion</button><button class="tab" data-mode="signup">Créer un compte</button></div>
-        <form id="auth-form">
+        <form id="auth-form" method="post">
           <label for="username">Nom de joueur</label><input id="username" name="username" autocomplete="username" maxlength="32" placeholder="Ex. BiscuitMaster" required>
           <label for="password">Mot de passe</label><input id="password" name="password" type="password" autocomplete="current-password" minlength="8" maxlength="72" placeholder="8 caractères minimum" required>
           <button class="primary full" type="submit" id="auth-submit">Entrer dans le jeu <span>→</span></button>
@@ -36,7 +36,7 @@
     <section id="game-screen" class="game hidden">
       <div class="game-heading"><div><p class="eyebrow">VOTRE EMPIRE</p><h1>La grande <em>fournée</em></h1></div><button id="refresh" class="icon-button" title="Actualiser">↻</button></div>
       <section class="weather-card" aria-label="Météo locale">
-        <div class="weather-main"><span id="weather-icon" class="weather-icon" aria-hidden="true">🌤️</span><div><p class="eyebrow">MÉTÉO LOCALE</p><div id="weather-place" class="weather-place">Choisissez une ville</div><div id="weather-description" class="weather-description">Une ambiance du jour pour votre fournée.</div></div><strong id="weather-temperature" class="weather-temperature">—°</strong></div>
+        <div class="weather-main"><span id="weather-icon" class="weather-icon" aria-hidden="true">🌤️</span><div><p class="eyebrow">MÉTÉO LOCALE</p><div id="weather-place" class="weather-place">Choisissez une ville</div><div id="weather-description" class="weather-description">Recherchez une ville pour activer un bonus de production.</div><strong id="weather-bonus" class="weather-description"></strong></div><strong id="weather-temperature" class="weather-temperature">—°</strong></div>
         <form id="weather-form" class="weather-search"><label class="sr-only" for="weather-city">Ville</label><input id="weather-city" name="city" placeholder="Rechercher une ville…" maxlength="80" autocomplete="off"><button class="weather-button" type="submit">Voir la météo</button><span id="weather-message" class="weather-message" role="status"></span></form>
         <div class="weather-credit">Données météo : <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a> · CC BY 4.0</div>
       </section>
@@ -60,6 +60,6 @@
     </section>
   </main>
   <div id="toast" class="toast" role="status"></div>
-  <script src="/app.js" defer></script>
+  <script src="app.js" defer></script>
 </body>
 </html>

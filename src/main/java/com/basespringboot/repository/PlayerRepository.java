@@ -18,7 +18,7 @@ public interface PlayerRepository extends JpaRepository<Player, Long> {
 
     List<Player> findTop10ByOrderByCookiesDesc();
 
-    // Serialize cookie purchases and clicks for the same player.
+    // Serialize account and production changes for the same player.
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select p from Player p where p.id = :id")
     Optional<Player> findByIdForUpdate(@Param("id") Long id);

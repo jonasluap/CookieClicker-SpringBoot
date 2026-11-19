@@ -3,7 +3,9 @@ package com.basespringboot.service.impl;
 import com.basespringboot.dto.PlayerRequest;
 import com.basespringboot.dto.PlayerResponse;
 import com.basespringboot.dto.PurchaseResponse;
+import com.basespringboot.dto.WeatherResponse;
 import com.basespringboot.entity.Player;
+import com.basespringboot.entity.PlayerWeather;
 import com.basespringboot.entity.Purchase;
 import com.basespringboot.entity.Upgrade;
 import com.basespringboot.exception.ConflictException;
@@ -16,7 +18,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.function.ToLongFunction;
 
 @Service
 @RequiredArgsConstructor
@@ -47,12 +51,13 @@ public class PlayerServiceImpl implements PlayerService {
     @Override
     @Transactional(readOnly = true)
     public List<PlayerResponse> findAll() {
-        return playerRepository.findAll().stream().map(this::toResponse).toList();
+        Instant now = Instant.now();
+        return playerRepository.findAll().stream().map(player -> toResponse(player, now, false)).toList();
     }
 
     @Override
     public PlayerResponse update(Long id, PlayerRequest request) {
-        Player player = requirePlayer(id);
+        Player player = requirePlayerForUpdate(id);
         String username = request.username().trim();
         if (!player.getUsername().equalsIgnoreCase(username)
                 && playerRepository.existsByUsernameIgnoreCase(username)) {
@@ -70,24 +75,24 @@ public class PlayerServiceImpl implements PlayerService {
 
     @Override
     public PlayerResponse click(Long id) {
-        Player player = playerRepository.findByIdForUpdate(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Player not found: " + id));
-        player.setCookies(Math.addExact(player.getCookies(), player.getCookiesPerClick()));
-        return toResponse(player);
+        return creditCookies(id, Player::getCookiesPerClick);
     }
 
     @Override
     public PlayerResponse collectPassiveCookies(Long id) {
-        Player player = playerRepository.findByIdForUpdate(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Player not found: " + id));
-        player.setCookies(Math.addExact(player.getCookies(), player.getCookiesPerSecond()));
+        return creditCookies(id, Player::getCookiesPerSecond);
+    }
+
+    @Override
+    public PlayerResponse updateWeather(Long id, PlayerWeather weather) {
+        Player player = requirePlayerForUpdate(id);
+        player.setWeather(weather);
         return toResponse(player);
     }
 
     @Override
     public PlayerResponse purchaseUpgrade(Long playerId, Long upgradeId) {
-        Player player = playerRepository.findByIdForUpdate(playerId)
-                .orElseThrow(() -> new ResourceNotFoundException("Player not found: " + playerId));
+        Player player = requirePlayerForUpdate(playerId);
         Upgrade upgrade = upgradeRepository.findById(upgradeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Upgrade not found: " + upgradeId));
 
@@ -127,9 +132,24 @@ public class PlayerServiceImpl implements PlayerService {
     @Override
     @Transactional(readOnly = true)
     public List<PlayerResponse> leaderboard() {
+        Instant now = Instant.now();
         return playerRepository.findTop10ByOrderByCookiesDesc().stream()
-                .map(this::toResponse)
+                .map(player -> toResponse(player, now, false))
                 .toList();
+    }
+
+    private PlayerResponse creditCookies(Long id, ToLongFunction<Player> baseRate) {
+        Player player = requirePlayerForUpdate(id);
+        Instant now = Instant.now();
+        int bonus = weatherBonus(player, now);
+        long earned = effectiveRate(baseRate.applyAsLong(player), bonus);
+        player.setCookies(Math.addExact(player.getCookies(), earned));
+        return toResponse(player, now, true);
+    }
+
+    private Player requirePlayerForUpdate(Long id) {
+        return playerRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Player not found: " + id));
     }
 
     private Player requirePlayer(Long id) {
@@ -138,7 +158,26 @@ public class PlayerServiceImpl implements PlayerService {
     }
 
     private PlayerResponse toResponse(Player player) {
+        return toResponse(player, Instant.now(), true);
+    }
+
+    private PlayerResponse toResponse(Player player, Instant now, boolean includeWeather) {
+        PlayerWeather weather = player.getWeather();
+        int bonus = weatherBonus(player, now);
+        WeatherResponse weatherResponse = includeWeather && weather != null
+                ? new WeatherResponse(weather.place(), weather.temperature(), weather.code(), bonus,
+                        !now.isBefore(weather.expiresAt()))
+                : null;
         return new PlayerResponse(player.getId(), player.getUsername(), player.getCookies(),
-                player.getCookiesPerClick(), player.getCookiesPerSecond());
+                effectiveRate(player.getCookiesPerClick(), bonus), effectiveRate(player.getCookiesPerSecond(), bonus),
+                weatherResponse);
+    }
+
+    private static int weatherBonus(Player player, Instant now) {
+        return player.getWeather() == null ? 0 : player.getWeather().bonusAt(now);
+    }
+
+    private static long effectiveRate(long baseRate, int bonus) {
+        return Math.min(baseRate, Long.MAX_VALUE - bonus) + bonus;
     }
 }

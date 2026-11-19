@@ -1,6 +1,14 @@
 server:
   port: 8080
 
+springdoc:
+  paths-to-match: /api/**
+  default-produces-media-type: application/json
+  override-with-generic-response: false
+  swagger-ui:
+    document-title: Fournée infinie — API Cookie Clicker
+    disable-swagger-default-url: true
+
 app:
   security:
     # Replace this development-only value with a random secret of at least 32 bytes.

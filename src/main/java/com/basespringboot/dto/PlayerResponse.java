@@ -5,6 +5,7 @@ public record PlayerResponse(
         String username,
         long cookies,
         long cookiesPerClick,
-        long cookiesPerSecond
+        long cookiesPerSecond,
+        WeatherResponse weather
 ) {
 }

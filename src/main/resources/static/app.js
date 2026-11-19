@@ -1,26 +1,74 @@
 (() => {
   const $ = (selector) => document.querySelector(selector);
-  const state = { token: localStorage.getItem('cookieToken'), playerId: localStorage.getItem('cookiePlayerId'), username: localStorage.getItem('cookieUsername'), mode: 'login', player: null, upgrades: [] };
-  const savedWeather = JSON.parse(localStorage.getItem('cookieWeather') || 'null');
+  const authButton = $('#auth-submit');
+  if (window.location.protocol === 'file:') {
+    authButton.disabled = true;
+    $('#auth-message').textContent = 'Démarrez Spring Boot puis ouvrez http://localhost:8082/ avec le profil local, ou http://localhost:8080/ avec Docker.';
+    return;
+  }
+
+  const state = { token: localStorage.getItem('cookieToken'), mode: 'login', player: null, upgrades: [] };
   const authScreen = $('#auth-screen'), gameScreen = $('#game-screen');
   const number = (n) => new Intl.NumberFormat('fr-FR').format(n);
+  const connectionMessage = 'Impossible de joindre le jeu. Vérifiez que Spring Boot est démarré et ouvrez son adresse.';
   let toastTimer;
+  let gameRequests = Promise.resolve();
+  let collecting = false;
 
-  async function api(path, options = {}) {
-    const headers = { ...(options.body ? { 'Content-Type': 'application/json' } : {}), ...(state.token ? { Authorization: `Bearer ${state.token}` } : {}), ...options.headers };
-    const response = await fetch(path, { ...options, headers });
+  async function api(path, options, token) {
+    const headers = { ...(options.body ? { 'Content-Type': 'application/json' } : {}), ...(token ? { Authorization: `Bearer ${token}` } : {}) };
+    let response;
+    try {
+      response = await fetch(`api/${path}`, { ...options, headers });
+    } catch {
+      throw new Error(connectionMessage);
+    }
+    if (response.status === 401 && token && token === state.token) {
+      logout('Session expirée. Connectez-vous à nouveau.');
+      throw new Error('Session expirée.');
+    }
     if (response.status === 204) return null;
-    const data = await response.json().catch(() => ({}));
+    if (!response.headers.get('content-type')?.includes('application/json')) {
+      throw new Error(connectionMessage);
+    }
+    const data = await response.json();
     if (!response.ok) {
-      if (response.status === 401 && state.token) logout(false);
+      if (response.status === 401) throw new Error('Nom de joueur ou mot de passe incorrect.');
       throw new Error(data.message || 'Une erreur est survenue. Réessayez.');
     }
     return data;
   }
   function notify(message) { const toast = $('#toast'); toast.textContent = message; toast.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove('show'), 2500); }
   function showAuth(message = '') { authScreen.classList.remove('hidden'); gameScreen.classList.add('hidden'); $('#logout').classList.add('hidden'); $('#account-name').textContent = 'Invité'; $('#auth-message').textContent = message; }
-  function showGame() { authScreen.classList.add('hidden'); gameScreen.classList.remove('hidden'); $('#logout').classList.remove('hidden'); $('#account-name').textContent = state.username || 'Joueur'; }
-  function logout(show = true) { state.token = null; state.playerId = null; state.username = null; localStorage.removeItem('cookieToken'); localStorage.removeItem('cookiePlayerId'); localStorage.removeItem('cookieUsername'); if (show) showAuth(); }
+  function showGame() {
+    authScreen.classList.add('hidden');
+    gameScreen.classList.remove('hidden');
+    $('#logout').classList.remove('hidden');
+    $('#account-name').textContent = 'Joueur';
+    $('#cookie').disabled = true;
+    $('#cookies').textContent = '–';
+    $('#per-click').textContent = '–';
+    $('#per-second').textContent = '–';
+    $('#shop-count').textContent = '–';
+    $('#upgrades').textContent = 'Chargement des améliorations…';
+    $('#leaderboard').replaceChildren();
+    $('#weather-form').reset();
+    $('.weather-button').disabled = true;
+    $('#weather-message').textContent = '';
+    renderWeather(null);
+    refresh();
+  }
+
+  function logout(message = '') {
+    state.token = null;
+    state.player = null;
+    state.upgrades = [];
+    localStorage.removeItem('cookieToken');
+    localStorage.removeItem('cookiePlayerId');
+    localStorage.removeItem('cookieUsername');
+    showAuth(message);
+  }
+
   function iconFor(name) { const icons = ['🖱️','🥣','🧑‍🍳','🔥','🏭','🚀']; return icons[Math.abs([...name].reduce((sum, char) => sum + char.charCodeAt(0), 0)) % icons.length]; }
 
   const weatherDescriptions = {
@@ -38,43 +86,95 @@
     85: ['🌨️', 'Averses de neige — cookies tout juste sortis du four.'], 86: ['❄️', 'Fortes averses de neige — restez bien au chaud.'],
     95: ['⛈️', 'Orage — mieux vaut rester à l’intérieur.'], 96: ['🌩️', 'Orage et grêle — le bon moment pour une pause.'], 99: ['🌩️', 'Orage violent et grêle — restez à l’abri.']
   };
+
   function renderWeather(weather) {
-    const condition = weatherDescriptions[weather.code] || ['🌡️', 'Conditions météo du moment.'];
-    $('#weather-icon').textContent = condition[0]; $('#weather-place').textContent = weather.place;
-    $('#weather-description').textContent = condition[1]; $('#weather-temperature').textContent = `${Math.round(weather.temperature)}°C`;
-  }
-  async function loadWeather(city) {
-    const message = $('#weather-message'); const button = $('.weather-button');
-    button.disabled = true; message.textContent = 'Recherche…';
-    try {
-      const geocodeUrl = new URL('https://geocoding-api.open-meteo.com/v1/search');
-      geocodeUrl.search = new URLSearchParams({ name: city, count: '1', language: 'fr', format: 'json' });
-      const geocodeResponse = await fetch(geocodeUrl);
-      if (!geocodeResponse.ok) throw new Error('Service météo momentanément indisponible.');
-      const geocode = await geocodeResponse.json(); const place = geocode.results?.[0];
-      if (!place) throw new Error('Ville introuvable. Essayez un autre nom.');
-      const forecastUrl = new URL('https://api.open-meteo.com/v1/forecast');
-      forecastUrl.search = new URLSearchParams({ latitude: String(place.latitude), longitude: String(place.longitude), current: 'temperature_2m,weather_code', timezone: 'auto' });
-      const forecastResponse = await fetch(forecastUrl);
-      if (!forecastResponse.ok) throw new Error('Impossible de récupérer la météo pour cette ville.');
-      const forecast = await forecastResponse.json();
-      const weather = { place: [place.name, place.admin1, place.country].filter(Boolean).join(', '), temperature: forecast.current.temperature_2m, code: forecast.current.weather_code };
-      renderWeather(weather); localStorage.setItem('cookieWeather', JSON.stringify(weather)); message.textContent = 'Météo mise à jour.';
-    } catch (error) { message.textContent = error.message || 'Météo indisponible. Le jeu reste accessible.'; }
-    finally { button.disabled = false; }
+    const [icon, description] = weather
+      ? weatherDescriptions[weather.code] || ['🌡️', 'Conditions météo du moment.']
+      : ['🌤️', 'Recherchez une ville pour activer un bonus de production.'];
+    $('#weather-icon').textContent = icon;
+    $('#weather-place').textContent = weather?.place ?? 'Choisissez une ville';
+    $('#weather-description').textContent = description;
+    $('#weather-temperature').textContent = weather ? `${Math.round(weather.temperature)}°C` : '—°';
+    const bonus = $('#weather-bonus');
+    if (!weather) {
+      bonus.textContent = '';
+    } else if (weather.expired) {
+      bonus.textContent = 'Bonus expiré. Recherchez à nouveau la ville pour le réactiver.';
+    } else if (weather.bonus > 0) {
+      bonus.textContent = `Bonus météo : +${weather.bonus} par clic et +${weather.bonus} par seconde`;
+    } else {
+      bonus.textContent = 'Ces conditions ne donnent pas de bonus.';
+    }
   }
 
-  async function refresh() {
-    $('#status').textContent = 'Synchronisation…';
-    const [player, upgrades, ranking] = await Promise.all([api(`/api/players/${state.playerId}`), api('/api/upgrades'), api('/api/players/leaderboard')]);
-    state.player = player; state.upgrades = upgrades;
-    renderPlayer(); renderUpgrades(); renderRanking(ranking);
-    $('#status').textContent = 'Progression sauvegardée';
+  async function loadWeather(city) {
+    const button = $('.weather-button');
+    const message = $('#weather-message');
+    if (!state.player || button.disabled) return;
+    const token = state.token;
+    button.disabled = true;
+    message.textContent = 'Recherche…';
+    try {
+      await api(`players/${state.player.id}/weather`, {
+        method: 'PUT',
+        body: JSON.stringify({ city })
+      }, token);
+      if (token !== state.token) return;
+      message.textContent = 'Météo mise à jour.';
+      await refresh();
+    } catch (error) {
+      if (token === state.token) message.textContent = error.message;
+    } finally {
+      if (token === state.token) button.disabled = false;
+    }
+  }
+
+  function runGameRequest(action) {
+    const token = state.token;
+    gameRequests = gameRequests.then(async () => {
+      if (!token || token !== state.token) return;
+      try {
+        await action(token);
+      } catch (error) {
+        if (token === state.token) notify(error.message);
+      }
+    });
+    return gameRequests;
+  }
+
+  function refresh() {
+    return runGameRequest(async (token) => {
+      $('#status').textContent = 'Synchronisation…';
+      try {
+        const [player, upgrades, ranking] = await Promise.all([
+          api('players', {}, token),
+          api('upgrades', {}, token),
+          api('players/leaderboard', {}, token)
+        ]);
+        if (token !== state.token) return;
+        if (!state.player) $('.weather-button').disabled = false;
+        state.player = player;
+        state.upgrades = upgrades;
+        $('#account-name').textContent = player.username;
+        $('#cookie').disabled = false;
+        renderPlayer();
+        renderUpgrades();
+        renderRanking(ranking);
+        $('#status').textContent = 'Progression sauvegardée';
+      } catch (error) {
+        if (token === state.token) {
+          $('#status').textContent = 'Synchronisation impossible. Actualisez pour réessayer.';
+          if (!state.player) $('#upgrades').textContent = 'La boutique est momentanément indisponible.';
+        }
+        throw error;
+      }
+    });
   }
   function renderPlayer() {
     $('#cookies').textContent = number(state.player.cookies);
     $('#per-click').textContent = number(state.player.cookiesPerClick);
     $('#per-second').textContent = number(state.player.cookiesPerSecond);
+    renderWeather(state.player.weather);
   }
   function renderUpgrades() {
     $('#shop-count').textContent = `${state.upgrades.length} objet${state.upgrades.length > 1 ? 's' : ''}`;
@@ -89,17 +189,28 @@
   }
   function renderRanking(rows) {
     const root = $('#leaderboard');
-    root.innerHTML = rows.length ? rows.map((row, index) => `<div class="rank-row ${Number(row.id) === Number(state.playerId) ? 'mine' : ''}"><span class="rank-no">${String(index + 1).padStart(2, '0')}</span><span class="rank-name">${escapeHtml(row.username)}${Number(row.id) === Number(state.playerId) ? ' · vous' : ''}</span><span class="rank-cookies">${number(row.cookies)} 🍪</span></div>`).join('') : '<div class="empty-state">Le classement se remplit à la première fournée.</div>';
+    root.innerHTML = rows.length ? rows.map((row, index) => `<div class="rank-row ${row.id === state.player.id ? 'mine' : ''}"><span class="rank-no">${String(index + 1).padStart(2, '0')}</span><span class="rank-name">${escapeHtml(row.username)}${row.id === state.player.id ? ' · vous' : ''}</span><span class="rank-cookies">${number(row.cookies)} 🍪</span></div>`).join('') : '<div class="empty-state">Le classement se remplit à la première fournée.</div>';
   }
   function escapeHtml(value) { return String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]); }
-  async function clickCookie() {
-    const button = $('#cookie'); button.animate([{ transform: 'scale(1)' }, { transform: 'scale(.92)' }, { transform: 'scale(1)' }], { duration: 130 });
-    try { state.player = await api(`/api/players/${state.playerId}/click`, { method: 'POST' }); renderPlayer(); renderUpgrades(); }
-    catch (error) { notify(error.message); }
+
+  function updatePlayer(action, message) {
+    return runGameRequest(async (token) => {
+      const player = await api(`players/${state.player.id}/${action}`, { method: 'POST' }, token);
+      if (token !== state.token) return;
+      state.player = player;
+      renderPlayer();
+      renderUpgrades();
+      if (message) notify(message);
+    });
   }
-  async function buy(upgradeId) {
-    try { state.player = await api(`/api/players/${state.playerId}/upgrades/${upgradeId}/purchase`, { method: 'POST' }); renderPlayer(); renderUpgrades(); notify('Amélioration achetée !'); }
-    catch (error) { notify(error.message); }
+
+  function clickCookie() {
+    const button = $('#cookie'); button.animate([{ transform: 'scale(1)' }, { transform: 'scale(.92)' }, { transform: 'scale(1)' }], { duration: 130 });
+    updatePlayer('click');
+  }
+
+  function buy(upgradeId) {
+    updatePlayer(`upgrades/${upgradeId}/purchase`, 'Amélioration achetée !');
   }
 
   document.querySelectorAll('.tab').forEach((tab) => tab.addEventListener('click', () => {
@@ -108,28 +219,35 @@
     $('#password').autocomplete = state.mode === 'login' ? 'current-password' : 'new-password'; $('#auth-message').textContent = '';
   }));
   $('#auth-form').addEventListener('submit', async (event) => {
-    event.preventDefault(); const button = $('#auth-submit'); button.disabled = true; $('#auth-message').textContent = '';
+    event.preventDefault(); authButton.disabled = true; $('#auth-message').textContent = '';
     const payload = { username: $('#username').value.trim(), password: $('#password').value };
     try {
-      const result = await api(`/api/auth/${state.mode === 'login' ? 'login' : 'signup'}`, { method: 'POST', body: JSON.stringify(payload) });
-      state.token = result.accessToken; state.playerId = result.playerId; state.username = result.username;
-      localStorage.setItem('cookieToken', state.token); localStorage.setItem('cookiePlayerId', state.playerId); localStorage.setItem('cookieUsername', state.username);
-      showGame(); await refresh();
+      const result = await api(`auth/${state.mode}`, { method: 'POST', body: JSON.stringify(payload) });
+      state.token = result.accessToken;
+      localStorage.setItem('cookieToken', state.token);
+      $('#password').value = '';
+      showGame();
     } catch (error) { $('#auth-message').textContent = error.message; }
-    finally { button.disabled = false; }
+    finally { authButton.disabled = false; }
   });
   $('#cookie').addEventListener('click', clickCookie);
   $('#logout').addEventListener('click', () => logout());
-  $('#refresh').addEventListener('click', () => refresh().catch((error) => notify(error.message)));
-  $('#weather-form').addEventListener('submit', (event) => { event.preventDefault(); const city = $('#weather-city').value.trim(); if (city) loadWeather(city); });
-  if (savedWeather && typeof savedWeather.temperature === 'number') renderWeather(savedWeather);
-
+  $('#refresh').addEventListener('click', refresh);
+  $('#weather-form').addEventListener('submit', (event) => {
+    event.preventDefault();
+    const city = $('#weather-city').value.trim();
+    if (city) loadWeather(city);
+  });
   window.setInterval(async () => {
-    if (!state.token || !state.player || state.player.cookiesPerSecond < 1) return;
-    try { state.player = await api(`/api/players/${state.playerId}/collect`, { method: 'POST' }); renderPlayer(); renderUpgrades(); }
-    catch (error) { if (state.token) notify(error.message); }
+    if (collecting || !state.player?.cookiesPerSecond) return;
+    collecting = true;
+    try {
+      await updatePlayer('collect');
+    } finally {
+      collecting = false;
+    }
   }, 1000);
 
-  if (state.token && state.playerId) { showGame(); refresh().catch(() => showAuth('Session expirée. Connectez-vous à nouveau.')); }
+  if (state.token) showGame();
   else showAuth();
 })();

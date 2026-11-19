@@ -6,9 +6,21 @@ University project (R3.03 Agile Development) built from the supplied `baseSpring
 **Repository:** https://github.com/jonasluap/CookieClicker-SpringBoot  
 **Tech stack:** Java 21 · Spring Boot 4.1.1 · Spring Data JPA · PostgreSQL 16 · Docker Compose · Bruno
 
+## Tester le jeu dans le navigateur
+
+Avec Java 21, lancez cette commande à la racine du projet.
+
+```bash
+./mvnw spring-boot:run -Dspring-boot.run.profiles=local
+```
+
+Quand Spring Boot a démarré, ouvrez [http://localhost:8082/](http://localhost:8082/) et choisissez **Créer un compte**. Spring Boot sert le HTML, le CSS, le JavaScript et l’API à la même adresse.
+
+Le profil `local` crée une base H2 intégrée dans `.local-data/` et conserve la progression entre les redémarrages. Pour le même mode dans IntelliJ, ajoutez `--spring.profiles.active=local` aux arguments de la configuration qui lance `BaseSpringBootApplication`. Docker utilise PostgreSQL et sert le jeu sur le port 8080.
+
 ## Goal (Sprints 1–2)
 
-This repository includes a playable French Cookie Clicker browser game and its REST API. A player earns cookies by clicking, collects passive production, buys improvements, and appears on the leaderboard. Progress is saved in PostgreSQL; accounts use stateless Bearer token authentication.
+This repository includes a playable French Cookie Clicker browser game and its REST API. A player earns cookies by clicking, collects passive production, buys improvements, and appears on the leaderboard. Progress is saved in PostgreSQL or in the embedded H2 database with the local profile. Accounts use stateless Bearer token authentication.
 
 ### Features
 
@@ -27,6 +39,18 @@ This repository includes a playable French Cookie Clicker browser game and its R
 - A starter upgrade catalogue is added automatically when the database has no upgrades.
 
 **Important rules:** clients cannot set their own cookie balance or buy upgrades without enough cookies. Each click adds `cookiesPerClick` cookies. Passive production is credited by the game while the player is online. An upgrade can grant `clickBonus`, `passiveBonus`, or both.
+
+### Bonus météo
+
+Dans le jeu, recherchez une ville dans **Météo locale**. Le serveur récupère les conditions auprès d’Open-Meteo et ajoute le bonus à chaque clic et à chaque seconde de production passive.
+
+| Conditions | Cookies supplémentaires par clic et par seconde |
+|---|---:|
+| Ciel dégagé ou nuageux | +1 |
+| Brouillard, pluie ou neige | +2 |
+| Orage | +3 |
+
+Le bonus est valable une heure et s’ajoute aux améliorations achetées. Recherchez à nouveau la ville pour actualiser la météo après expiration.
 
 ## Directory layout
 
@@ -111,6 +135,17 @@ Both return `accessToken`, `tokenType` (`Bearer`), `expiresIn` (seconds), `playe
 
 ## REST endpoints
 
+### Swagger UI
+
+Ouvre **Fournée infinie — API Cookie Clicker** pour consulter les routes et les tester depuis le navigateur.
+
+- Profil `local` sur [localhost:8082/swagger-ui.html](http://localhost:8082/swagger-ui.html).
+- Docker sur [localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html).
+
+Dans **Authentification**, ouvre `POST /api/auth/signup` ou `POST /api/auth/login`, puis clique sur **Try it out** et **Execute**. Copie la valeur d’`accessToken` dans **Authorize**. Swagger ajoute l’en-tête Bearer aux requêtes protégées. Utilise le `playerId` renvoyé dans les routes qui le demandent.
+
+La spécification OpenAPI est disponible sur `/v3/api-docs` au format JSON et sur `/v3/api-docs.yaml` au format YAML.
+
 ### Players
 
 | HTTP | Path | Response | Description |
@@ -122,6 +157,8 @@ Both return `accessToken`, `tokenType` (`Bearer`), `expiresIn` (seconds), `playe
 | PUT | `/api/players/{id}` | 200 | Update player username |
 | DELETE | `/api/players/{id}` | 204 | Delete player and its purchase history |
 | POST | `/api/players/{id}/click` | 200 | Earn `cookiesPerClick` cookies |
+| POST | `/api/players/{id}/collect` | 200 | Collect `cookiesPerSecond` cookies |
+| PUT | `/api/players/{id}/weather` | 200 | Set the weather and production bonus for the player's chosen city (`{"city":"Paris"}`) |
 | GET | `/api/players/leaderboard` | 200 | Top ten players by current balance |
 | GET | `/api/players/{id}/purchases` | 200 | Purchase history |
 | POST | `/api/players/{playerId}/upgrades/{upgradeId}/purchase` | 200 | Buy upgrade |
@@ -222,13 +259,14 @@ Requests that read `{{playerId}}` or `{{upgradeId}}` need the corresponding crea
 ./mvnw test
 ```
 
-The included service unit tests use Mockito and do not need a running PostgreSQL instance. Once the Docker API is running, you can also check the whole CRUD/gameplay workflow using Python's standard library:
+The included service unit tests use Mockito and do not need a running PostgreSQL instance. With the app running in local mode or in Docker, check the browser assets and authenticated gameplay using Python's standard library.
 
 ```bash
-python3 scripts/smoke_test.py
+python3 scripts/smoke_test.py                        # Docker
+python3 scripts/smoke_test.py http://localhost:8082/  # local profile
 ```
 
-This smoke test creates disposable sample data and cleans it up. Full formal HTTP + PostgreSQL integration tests and load testing are future-sprint improvements.
+The smoke test creates a test account and upgrade and removes them afterwards. Pass the game URL as an argument if the app runs on a different port.
 
 ## Agile organization / submission checklist
 
