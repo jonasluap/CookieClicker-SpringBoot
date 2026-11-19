@@ -1,4 +1,4 @@
-# Cookie Clicker API — Sprint 2
+# Cookie Clicker — Fournee infinie
 
 University project (R3.03 Agile Development) built from the supplied `baseSpringBoot` starter.
 
@@ -8,7 +8,7 @@ University project (R3.03 Agile Development) built from the supplied `baseSpring
 
 ## Goal (Sprints 1–2)
 
-This repository implements a REST API for a future Cookie Clicker browser game. A player earns cookies by clicking and spends them on improvements. Sprint 1 delivered gameplay and persistence; Sprint 2 adds signup/login and stateless Bearer token authentication.
+This repository includes a playable French Cookie Clicker browser game and its REST API. A player earns cookies by clicking, collects passive production, buys improvements, and appears on the leaderboard. Progress is saved in PostgreSQL; accounts use stateless Bearer token authentication.
 
 ### Features
 
@@ -23,8 +23,10 @@ This repository implements a REST API for a future Cookie Clicker browser game. 
 - A Bruno collection (`bruno/CookieClicker-Sprint2/`) covering signup, authenticated CRUD, and gameplay.
 - Signup/login returning signed JWT access tokens, validated by Spring Security's OAuth2 Resource Server support.
 - Passwords stored as BCrypt hashes; player endpoints require a Bearer token and only the token owner can access that player's account.
+- Responsive browser interface served at `http://localhost:8080/`, with account creation, gameplay, upgrades and leaderboard.
+- A starter upgrade catalogue is added automatically when the database has no upgrades.
 
-**Important rules:** clients cannot set their own cookie balance or buy upgrades without enough cookies. Each click adds `cookiesPerClick` cookies. An upgrade can grant `clickBonus`, `passiveBonus`, or both. `cookiesPerSecond` is **stored but not yet automatically credited over time**; passive production belongs to a later sprint.
+**Important rules:** clients cannot set their own cookie balance or buy upgrades without enough cookies. Each click adds `cookiesPerClick` cookies. Passive production is credited by the game while the player is online. An upgrade can grant `clickBonus`, `passiveBonus`, or both.
 
 ## Directory layout
 
@@ -59,6 +61,7 @@ docker compose logs app --tail=40
 If your Docker installation needs elevated permissions, use `sudo docker compose ...`.
 
 - Spring Boot: `http://localhost:8080`
+- Game: `http://localhost:8080/` (create an account, then click the cookie)
 - PostgreSQL (host port): `localhost:5433`; database `base_db`
 - Adminer: `http://localhost:8081`
   - System: `PostgreSQL`

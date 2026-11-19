@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#17120f">
+  <title>Cookie Clicker — Fournée infinie</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <a class="brand" href="/"><span class="brand-mark">✦</span> FOURNÉE <span class="brand-light">INFINIE</span></a>
+      <div class="account"><span id="account-name">Invité</span><button id="logout" class="link-button hidden">Déconnexion</button></div>
+    </header>
+
+    <section id="auth-screen" class="auth-layout">
+      <div class="hero-copy">
+        <p class="eyebrow">LE JEU QUI SENT BON</p>
+        <h1>Un clic.<br>Des <em>millions</em><br>de cookies.</h1>
+        <p class="subcopy">Lancez votre empire pâtissier, améliorez votre fournée et grimpez au classement.</p>
+        <div class="hero-cookie" aria-hidden="true">🍪</div>
+      </div>
+      <div class="auth-card">
+        <div class="auth-tabs"><button class="tab active" data-mode="login">Connexion</button><button class="tab" data-mode="signup">Créer un compte</button></div>
+        <form id="auth-form">
+          <label for="username">Nom de joueur</label><input id="username" name="username" autocomplete="username" maxlength="32" placeholder="Ex. BiscuitMaster" required>
+          <label for="password">Mot de passe</label><input id="password" name="password" type="password" autocomplete="current-password" minlength="8" maxlength="72" placeholder="8 caractères minimum" required>
+          <button class="primary full" type="submit" id="auth-submit">Entrer dans le jeu <span>→</span></button>
+          <p id="auth-message" class="message" role="status"></p>
+        </form>
+        <p class="fine-print">Votre progression est sauvegardée sur le serveur.</p>
+      </div>
+    </section>
+
+    <section id="game-screen" class="game hidden">
+      <div class="game-heading"><div><p class="eyebrow">VOTRE EMPIRE</p><h1>La grande <em>fournée</em></h1></div><button id="refresh" class="icon-button" title="Actualiser">↻</button></div>
+      <div class="game-grid">
+        <section class="panel bakery">
+          <div class="balance"><span class="cookie-dot">●</span><strong id="cookies">0</strong><span>cookies</span></div>
+          <p class="rate"><span id="per-click">1</span> par clic <i>·</i> <span id="per-second">0</span> par seconde</p>
+          <button id="cookie" class="cookie-button" aria-label="Cliquer pour gagner des cookies"><span>🍪</span></button>
+          <p class="click-hint">CLIQUEZ POUR CUIRE</p>
+        </section>
+        <section class="panel shop">
+          <div class="section-title"><div><p class="eyebrow">INVESTISSEZ VOS COOKIES</p><h2>La boutique</h2></div><span id="shop-count" class="count">0 objets</span></div>
+          <div id="upgrades" class="upgrade-list"><div class="empty-state">Chargement des améliorations…</div></div>
+        </section>
+      </div>
+      <section class="panel leaderboard">
+        <div class="section-title"><div><p class="eyebrow">LES MEILLEURS PÂTISSIERS</p><h2>Classement</h2></div><span class="trophy">🏆</span></div>
+        <div id="leaderboard" class="ranking"></div>
+      </section>
+      <footer>Fait avec <span>♥</span> et beaucoup de beurre <i>·</i> <span id="status">Prêt à jouer</span></footer>
+    </section>
+  </main>
+  <div id="toast" class="toast" role="status"></div>
+  <script src="/app.js" defer></script>
+</body>
+</html>

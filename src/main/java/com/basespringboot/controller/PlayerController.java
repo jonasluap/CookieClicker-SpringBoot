@@ -57,6 +57,12 @@ public class PlayerController {
         return playerService.click(id);
     }
 
+    @PostMapping("/{id}/collect")
+    public PlayerResponse collectPassiveCookies(@PathVariable Long id, @AuthenticationPrincipal Jwt jwt) {
+        requireOwner(id, jwt);
+        return playerService.collectPassiveCookies(id);
+    }
+
     @PostMapping("/{playerId}/upgrades/{upgradeId}/purchase")
     public PlayerResponse purchaseUpgrade(@PathVariable Long playerId, @PathVariable Long upgradeId, @AuthenticationPrincipal Jwt jwt) {
         requireOwner(playerId, jwt);

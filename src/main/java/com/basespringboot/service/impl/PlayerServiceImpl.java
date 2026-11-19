@@ -77,6 +77,14 @@ public class PlayerServiceImpl implements PlayerService {
     }
 
     @Override
+    public PlayerResponse collectPassiveCookies(Long id) {
+        Player player = playerRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Player not found: " + id));
+        player.setCookies(Math.addExact(player.getCookies(), player.getCookiesPerSecond()));
+        return toResponse(player);
+    }
+
+    @Override
     public PlayerResponse purchaseUpgrade(Long playerId, Long upgradeId) {
         Player player = playerRepository.findByIdForUpdate(playerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Player not found: " + playerId));

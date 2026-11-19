@@ -13,6 +13,7 @@ public interface PlayerService {
     PlayerResponse update(Long id, PlayerRequest request);
     void delete(Long id);
     PlayerResponse click(Long id);
+    PlayerResponse collectPassiveCookies(Long id);
     PlayerResponse purchaseUpgrade(Long playerId, Long upgradeId);
     List<PurchaseResponse> purchaseHistory(Long playerId);
     List<PlayerResponse> leaderboard();
