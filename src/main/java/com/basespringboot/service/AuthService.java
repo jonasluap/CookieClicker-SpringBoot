@@ -30,6 +30,7 @@ public class AuthService {
         Player player = new Player();
         player.setUsername(username);
         player.setPasswordHash(passwordEncoder.encode(request.password()));
+        // Save the player first so the token can include the database-generated ID.
         return tokenService.issue(playerRepository.save(player));
     }
 

@@ -1,0 +1,21 @@
+meta {
+  name: Second Click
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/api/players/{{playerId}}/click
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+tests {
+  test("Brings the balance up to the upgrade price", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().cookies).to.equal(2);
+  });
+}

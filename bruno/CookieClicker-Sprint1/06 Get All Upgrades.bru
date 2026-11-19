@@ -1,0 +1,22 @@
+meta {
+  name: Get All Upgrades
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/upgrades
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+tests {
+  test("The catalogue includes the newly created upgrade", function() {
+    expect(res.getStatus()).to.equal(200);
+    const upgradeId = Number(bru.getVar("upgradeId"));
+    expect(res.getBody().some((upgrade) => upgrade.id === upgradeId)).to.be.true;
+  });
+}

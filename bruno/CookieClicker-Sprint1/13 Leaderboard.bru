@@ -1,0 +1,23 @@
+meta {
+  name: Leaderboard
+  type: http
+  seq: 13
+}
+
+get {
+  url: {{baseUrl}}/api/players/leaderboard
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+tests {
+  test("Returns up to ten players ordered by cookie balance", function() {
+    expect(res.getStatus()).to.equal(200);
+    const players = res.getBody();
+    expect(players.length).to.be.at.most(10);
+    expect(players.every((player, index) => index === 0 || players[index - 1].cookies >= player.cookies)).to.be.true;
+  });
+}

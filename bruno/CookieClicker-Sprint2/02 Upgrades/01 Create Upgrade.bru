@@ -32,6 +32,7 @@ tests {
 }
 
 script:post-response {
+  // Use the generated ID in the catalogue and purchase requests that follow.
   if (res.status === 201) {
     bru.setVar("upgradeId", res.body.id);
   }

@@ -62,6 +62,7 @@ public class UpgradeServiceImpl implements UpgradeService {
     @Override
     public void delete(Long id) {
         Upgrade upgrade = requireUpgrade(id);
+        // Keep the catalogue entry available to existing purchase history.
         if (purchaseRepository.existsByUpgradeId(id)) {
             throw new ConflictException("Upgrade has purchase history and cannot be deleted");
         }

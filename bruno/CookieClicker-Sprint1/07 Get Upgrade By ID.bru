@@ -1,0 +1,21 @@
+meta {
+  name: Get Upgrade By ID
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/api/upgrades/{{upgradeId}}
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+tests {
+  test("Returns the selected upgrade", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().id).to.equal(Number(bru.getVar("upgradeId")));
+  });
+}

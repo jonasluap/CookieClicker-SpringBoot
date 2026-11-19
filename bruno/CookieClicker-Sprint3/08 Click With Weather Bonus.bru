@@ -1,0 +1,22 @@
+meta {
+  name: Click With Weather Bonus
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/api/players/{{playerId}}/click
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+tests {
+  test("Credits the base click and active weather bonus", function() {
+    expect(res.getStatus()).to.equal(200);
+    const bonus = Number(bru.getVar("weatherBonus"));
+    expect(res.getBody().cookies).to.equal(1 + bonus);
+  });
+}

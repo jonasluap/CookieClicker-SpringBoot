@@ -28,6 +28,7 @@ tests {
 }
 
 script:post-response {
+  // Share the player ID and JWT with later requests in this collection.
   if (res.status === 200) {
     bru.setVar("playerId", res.body.playerId);
     bru.setVar("accessToken", res.body.accessToken);

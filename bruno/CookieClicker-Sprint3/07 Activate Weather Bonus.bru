@@ -1,0 +1,40 @@
+meta {
+  name: Activate Weather Bonus
+  type: http
+  seq: 7
+}
+
+put {
+  url: {{baseUrl}}/api/players/{{playerId}}/weather
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "city": "{{weatherCity}}"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    bru.setVar("weatherBonus", res.getBody().weather.bonus);
+  }
+}
+
+tests {
+  test("Applies the weather bonus to both production rates", function() {
+    expect(res.getStatus()).to.equal(200);
+    const player = res.getBody();
+    const bonus = player.weather.bonus;
+    expect(bonus).to.be.oneOf([1, 2, 3]);
+    expect(player.weather.expired).to.be.false;
+    expect(player.cookies).to.equal(0);
+    expect(player.cookiesPerClick).to.equal(1 + bonus);
+    expect(player.cookiesPerSecond).to.equal(bonus);
+  });
+}

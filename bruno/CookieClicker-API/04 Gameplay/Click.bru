@@ -1,0 +1,18 @@
+meta {
+  name: Click
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/players/{{playerId}}/click
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("HTTP 200", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().cookies).to.be.a("number");
+  });
+}

@@ -12,6 +12,7 @@ public record PlayerWeather(
         @Column(name = "weather_code") int code,
         @Column(name = "weather_expires_at") Instant expiresAt
 ) {
+    // Map the active WMO weather code to the cookie bonus used by both production rates.
     public int bonusAt(Instant now) {
         if (!now.isBefore(expiresAt)) {
             return 0;

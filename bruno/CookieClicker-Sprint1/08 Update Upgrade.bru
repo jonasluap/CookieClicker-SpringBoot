@@ -1,0 +1,32 @@
+meta {
+  name: Update Upgrade
+  type: http
+  seq: 8
+}
+
+put {
+  url: {{baseUrl}}/api/upgrades/{{upgradeId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "name": "{{upgradeName}} v2",
+    "description": "Updated click upgrade",
+    "price": 2,
+    "clickBonus": 2,
+    "passiveBonus": 0
+  }
+}
+
+tests {
+  test("Persists the renamed upgrade", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().name).to.equal(bru.getVar("upgradeName") + " v2");
+  });
+}

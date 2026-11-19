@@ -1,0 +1,18 @@
+meta {
+  name: Purchase Upgrade
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/players/{{playerId}}/upgrades/{{upgradeId}}/purchase
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("HTTP 200", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().id).to.equal(Number(bru.getVar("playerId")));
+  });
+}

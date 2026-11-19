@@ -1,0 +1,25 @@
+meta {
+  name: Delete Player
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{baseUrl}}/api/players/{{playerId}}
+  body: none
+  auth: inherit
+}
+
+script:post-response {
+  if (res.getStatus() === 204) {
+    bru.deleteVar("accessToken");
+    bru.deleteVar("playerId");
+    bru.deleteVar("playerUsername");
+  }
+}
+
+tests {
+  test("HTTP 204", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

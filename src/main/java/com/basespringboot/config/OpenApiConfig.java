@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.context.annotation.Configuration;
 
+/** Defines the shared API documentation and the JWT scheme used by Swagger UI. */
 @Configuration(proxyBeanMethods = false)
 @OpenAPIDefinition(
         info = @Info(

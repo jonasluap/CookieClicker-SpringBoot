@@ -1,12 +1,14 @@
 (() => {
   const $ = (selector) => document.querySelector(selector);
   const authButton = $('#auth-submit');
+  // Spring Boot serves both the page and its API. Opening the HTML file directly has no API.
   if (window.location.protocol === 'file:') {
     authButton.disabled = true;
     $('#auth-message').textContent = 'Démarrez Spring Boot puis ouvrez http://localhost:8082/ avec le profil local, ou http://localhost:8080/ avec Docker.';
     return;
   }
 
+  // Restore the token across reloads. The server supplies the current player and catalogue.
   const state = { token: localStorage.getItem('cookieToken'), mode: 'login', player: null, upgrades: [] };
   const authScreen = $('#auth-screen'), gameScreen = $('#game-screen');
   const number = (n) => new Intl.NumberFormat('fr-FR').format(n);
@@ -15,6 +17,7 @@
   let gameRequests = Promise.resolve();
   let collecting = false;
 
+  // Send requests to the same origin and turn API errors into messages for the current screen.
   async function api(path, options, token) {
     const headers = { ...(options.body ? { 'Content-Type': 'application/json' } : {}), ...(token ? { Authorization: `Bearer ${token}` } : {}) };
     let response;
@@ -23,6 +26,7 @@
     } catch {
       throw new Error(connectionMessage);
     }
+    // A late response from an old session must leave the current session alone.
     if (response.status === 401 && token && token === state.token) {
       logout('Session expirée. Connectez-vous à nouveau.');
       throw new Error('Session expirée.');
@@ -38,6 +42,7 @@
     }
     return data;
   }
+  // Screen transitions and notifications.
   function notify(message) { const toast = $('#toast'); toast.textContent = message; toast.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove('show'), 2500); }
   function showAuth(message = '') { authScreen.classList.remove('hidden'); gameScreen.classList.add('hidden'); $('#logout').classList.add('hidden'); $('#account-name').textContent = 'Invité'; $('#auth-message').textContent = message; }
   function showGame() {
@@ -45,6 +50,7 @@
     gameScreen.classList.remove('hidden');
     $('#logout').classList.remove('hidden');
     $('#account-name').textContent = 'Joueur';
+    // Keep gameplay controls disabled until the profile has finished loading.
     $('#cookie').disabled = true;
     $('#cookies').textContent = '–';
     $('#per-click').textContent = '–';
@@ -71,6 +77,7 @@
 
   function iconFor(name) { const icons = ['🖱️','🥣','🧑‍🍳','🔥','🏭','🚀']; return icons[Math.abs([...name].reduce((sum, char) => sum + char.charCodeAt(0), 0)) % icons.length]; }
 
+  // Weather codes select the icon and label. The API supplies the bonus and whether it has expired.
   const weatherDescriptions = {
     0: ['☀️', 'Ciel dégagé — parfait pour une fournée ensoleillée.'],
     1: ['🌤️', 'Principalement dégagé — la journée s’annonce douce.'],
@@ -107,6 +114,7 @@
     }
   }
 
+  // Send the city to the server, then reload the profile with its effective production rates.
   async function loadWeather(city) {
     const button = $('.weather-button');
     const message = $('#weather-message');
@@ -129,6 +137,7 @@
     }
   }
 
+  // Queue gameplay actions and refreshes so an older response cannot overwrite a newer one.
   function runGameRequest(action) {
     const token = state.token;
     gameRequests = gameRequests.then(async () => {
@@ -142,6 +151,7 @@
     return gameRequests;
   }
 
+  // Load the three parts of the game screen together after sign-in or on a manual refresh.
   function refresh() {
     return runGameRequest(async (token) => {
       $('#status').textContent = 'Synchronisation…';
@@ -170,6 +180,7 @@
       }
     });
   }
+  // Render the latest server state into the balance, shop and leaderboard.
   function renderPlayer() {
     $('#cookies').textContent = number(state.player.cookies);
     $('#per-click').textContent = number(state.player.cookiesPerClick);
@@ -181,6 +192,7 @@
     const list = $('#upgrades');
     if (!state.upgrades.length) { list.innerHTML = '<div class="empty-state">Aucune amélioration disponible pour le moment.</div>'; return; }
     list.innerHTML = state.upgrades.map((item) => {
+      // Affordability here controls the button. The server checks the balance again at purchase time.
       const afford = state.player.cookies >= item.price;
       const bonus = [item.clickBonus ? `+${number(item.clickBonus)} / clic` : '', item.passiveBonus ? `+${number(item.passiveBonus)} / sec` : ''].filter(Boolean).join(' · ');
       return `<article class="upgrade"><div class="upgrade-icon">${iconFor(item.name)}</div><div><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description || bonus)}</p></div><button class="buy" data-upgrade="${item.id}" ${afford ? '' : 'disabled'}>${number(item.price)} 🍪<span>${bonus}</span></button></article>`;
@@ -191,8 +203,10 @@
     const root = $('#leaderboard');
     root.innerHTML = rows.length ? rows.map((row, index) => `<div class="rank-row ${row.id === state.player.id ? 'mine' : ''}"><span class="rank-no">${String(index + 1).padStart(2, '0')}</span><span class="rank-name">${escapeHtml(row.username)}${row.id === state.player.id ? ' · vous' : ''}</span><span class="rank-cookies">${number(row.cookies)} 🍪</span></div>`).join('') : '<div class="empty-state">Le classement se remplit à la première fournée.</div>';
   }
+  // Escape text from the API before inserting it into an HTML template.
   function escapeHtml(value) { return String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]); }
 
+  // Clicks, purchases and passive collection all return the updated player profile.
   function updatePlayer(action, message) {
     return runGameRequest(async (token) => {
       const player = await api(`players/${state.player.id}/${action}`, { method: 'POST' }, token);
@@ -213,6 +227,7 @@
     updatePlayer(`upgrades/${upgradeId}/purchase`, 'Amélioration achetée !');
   }
 
+  // The login and signup tabs share one form and select which authentication route to call.
   document.querySelectorAll('.tab').forEach((tab) => tab.addEventListener('click', () => {
     state.mode = tab.dataset.mode; document.querySelectorAll('.tab').forEach((item) => item.classList.toggle('active', item === tab));
     $('#auth-submit').innerHTML = state.mode === 'login' ? 'Entrer dans le jeu <span>→</span>' : 'Créer mon compte <span>→</span>';
@@ -230,6 +245,7 @@
     } catch (error) { $('#auth-message').textContent = error.message; }
     finally { authButton.disabled = false; }
   });
+  // Bind the game controls to their API actions.
   $('#cookie').addEventListener('click', clickCookie);
   $('#logout').addEventListener('click', () => logout());
   $('#refresh').addEventListener('click', refresh);
@@ -238,6 +254,7 @@
     const city = $('#weather-city').value.trim();
     if (city) loadWeather(city);
   });
+  // Ask the server for one passive production tick at a time while the game page is open.
   window.setInterval(async () => {
     if (collecting || !state.player?.cookiesPerSecond) return;
     collecting = true;
@@ -248,6 +265,7 @@
     }
   }, 1000);
 
+  // A saved token is checked by the server when the game loads its data.
   if (state.token) showGame();
   else showAuth();
 })();

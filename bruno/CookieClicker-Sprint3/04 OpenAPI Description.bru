@@ -1,0 +1,21 @@
+meta {
+  name: OpenAPI Description
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/v3/api-docs
+  auth: none
+}
+
+tests {
+  test("Documents the weather and collection routes", function() {
+    expect(res.getStatus()).to.equal(200);
+    const spec = res.getBody();
+    expect(spec.info.title).to.equal("Fournée infinie — API Cookie Clicker");
+    expect(spec.paths["/api/players/{id}/weather"]).to.have.property("put");
+    expect(spec.paths["/api/players/{id}/collect"]).to.have.property("post");
+    expect(spec.components.securitySchemes.bearerAuth.scheme).to.equal("bearer");
+  });
+}

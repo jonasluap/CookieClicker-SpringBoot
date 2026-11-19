@@ -1,0 +1,18 @@
+meta {
+  name: Game Home
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/
+  auth: none
+}
+
+tests {
+  test("Serves the game and links its JavaScript", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.include('id="auth-form"');
+    expect(res.getBody()).to.include('src="app.js"');
+  });
+}

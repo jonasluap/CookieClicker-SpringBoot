@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/** Maps profile and gameplay requests to the services that implement the game rules. */
 @RestController
 @RequestMapping("/api/players")
 @RequiredArgsConstructor
@@ -46,6 +47,7 @@ public class PlayerController {
     @ApiResponse(responseCode = "404", description = "Joueur introuvable.",
             content = @Content(schema = @Schema(implementation = ApiError.class)))
     public PlayerResponse findMine(@AuthenticationPrincipal Jwt jwt) {
+        // The signed token supplies the player ID for the current profile.
         return playerService.findById(((Number) jwt.getClaim("playerId")).longValue());
     }
 
@@ -132,6 +134,7 @@ public class PlayerController {
     public PlayerResponse updateWeather(@PathVariable Long id, @Valid @RequestBody WeatherRequest request,
                                         @AuthenticationPrincipal Jwt jwt) {
         requireOwner(id, jwt);
+        // Fetch the forecast before opening the transaction that stores it.
         return playerService.updateWeather(id, weatherService.lookup(request.city()));
     }
 
@@ -171,6 +174,7 @@ public class PlayerController {
         return playerService.leaderboard();
     }
 
+    // Authentication establishes identity. This check grants access to the requested profile.
     private void requireOwner(Long playerId, Jwt jwt) {
         if (!playerId.equals(((Number) jwt.getClaim("playerId")).longValue())) {
             throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN, "You can only access your own player account");

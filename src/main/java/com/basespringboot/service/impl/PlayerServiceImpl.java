@@ -86,6 +86,7 @@ public class PlayerServiceImpl implements PlayerService {
     @Override
     public PlayerResponse updateWeather(Long id, PlayerWeather weather) {
         Player player = requirePlayerForUpdate(id);
+        // Keep the temporary weather snapshot separate from the permanent upgrade bonuses.
         player.setWeather(weather);
         return toResponse(player);
     }
@@ -100,12 +101,14 @@ public class PlayerServiceImpl implements PlayerService {
             throw new ConflictException("Not enough cookies to purchase this upgrade");
         }
 
+        // Commit the debit, permanent rate increases and purchase history in one transaction.
         long newClicks = Math.addExact(player.getCookiesPerClick(), upgrade.getClickBonus());
         long newPassive = Math.addExact(player.getCookiesPerSecond(), upgrade.getPassiveBonus());
         player.setCookies(player.getCookies() - upgrade.getPrice());
         player.setCookiesPerClick(newClicks);
         player.setCookiesPerSecond(newPassive);
 
+        // Record the price paid so future catalogue changes leave the receipt accurate.
         Purchase purchase = new Purchase();
         purchase.setPlayer(player);
         purchase.setUpgrade(upgrade);
@@ -138,8 +141,10 @@ public class PlayerServiceImpl implements PlayerService {
                 .toList();
     }
 
+    // The caller selects the base rate for either a click or one passive production tick.
     private PlayerResponse creditCookies(Long id, ToLongFunction<Player> baseRate) {
         Player player = requirePlayerForUpdate(id);
+        // Evaluate the gain and the returned rates at the same instant in case the bonus expires.
         Instant now = Instant.now();
         int bonus = weatherBonus(player, now);
         long earned = effectiveRate(baseRate.applyAsLong(player), bonus);
@@ -164,6 +169,7 @@ public class PlayerServiceImpl implements PlayerService {
     private PlayerResponse toResponse(Player player, Instant now, boolean includeWeather) {
         PlayerWeather weather = player.getWeather();
         int bonus = weatherBonus(player, now);
+        // Include the saved city only in responses sent to its owner.
         WeatherResponse weatherResponse = includeWeather && weather != null
                 ? new WeatherResponse(weather.place(), weather.temperature(), weather.code(), bonus,
                         !now.isBefore(weather.expiresAt()))

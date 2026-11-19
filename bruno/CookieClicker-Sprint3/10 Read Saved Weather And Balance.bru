@@ -1,0 +1,24 @@
+meta {
+  name: Read Saved Weather And Balance
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/api/players
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+tests {
+  test("The profile retains the weather bonus and earned cookies", function() {
+    expect(res.getStatus()).to.equal(200);
+    const player = res.getBody();
+    const bonus = Number(bru.getVar("weatherBonus"));
+    expect(player.weather.bonus).to.equal(bonus);
+    expect(player.cookies).to.equal(1 + 2 * bonus);
+  });
+}

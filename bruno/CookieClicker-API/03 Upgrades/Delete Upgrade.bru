@@ -1,0 +1,23 @@
+meta {
+  name: Delete Upgrade
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/api/upgrades/{{upgradeId}}
+  body: none
+  auth: inherit
+}
+
+script:post-response {
+  if (res.getStatus() === 204) {
+    bru.deleteVar("upgradeId");
+  }
+}
+
+tests {
+  test("HTTP 204", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

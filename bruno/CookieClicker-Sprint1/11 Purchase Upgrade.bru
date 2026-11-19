@@ -1,0 +1,22 @@
+meta {
+  name: Purchase Upgrade
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/api/players/{{playerId}}/upgrades/{{upgradeId}}/purchase
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+tests {
+  test("Debits the price and adds the click bonus", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().cookies).to.equal(0);
+    expect(res.getBody().cookiesPerClick).to.equal(3);
+  });
+}

@@ -13,6 +13,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 
+/** Maps known controller and service exceptions to HTTP statuses and a shared JSON error format. */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 

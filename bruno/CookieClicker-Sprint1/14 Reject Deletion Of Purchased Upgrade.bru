@@ -1,0 +1,20 @@
+meta {
+  name: Reject Deletion Of Purchased Upgrade
+  type: http
+  seq: 14
+}
+
+delete {
+  url: {{baseUrl}}/api/upgrades/{{upgradeId}}
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+tests {
+  test("Preserves upgrades referenced by purchase history", function() {
+    expect(res.getStatus()).to.equal(409);
+  });
+}

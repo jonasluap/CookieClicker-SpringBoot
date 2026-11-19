@@ -1,0 +1,18 @@
+meta {
+  name: Get Upgrade By ID
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/upgrades/{{upgradeId}}
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("HTTP 200", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().id).to.equal(Number(bru.getVar("upgradeId")));
+  });
+}

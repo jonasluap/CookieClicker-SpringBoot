@@ -20,6 +20,7 @@ public class TokenService {
 
     public TokenResponse issue(Player player) {
         Instant now = Instant.now();
+        // Use the stable player ID for ownership checks because the username can change.
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .issuer("cookie-clicker-api")
                 .issuedAt(now)

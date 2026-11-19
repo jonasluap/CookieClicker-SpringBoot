@@ -1,0 +1,25 @@
+meta {
+  name: Get My Player
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/players
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+tests {
+  test("A new player starts with one cookie per click", function() {
+    expect(res.getStatus()).to.equal(200);
+    const player = res.getBody();
+    expect(player.id).to.equal(Number(bru.getVar("playerId")));
+    expect(player.cookies).to.equal(0);
+    expect(player.cookiesPerClick).to.equal(1);
+    expect(player.cookiesPerSecond).to.equal(0);
+  });
+}

@@ -1,0 +1,28 @@
+meta {
+  name: Update Player
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/api/players/{{playerId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "username": "{{playerUsername}}_new"
+  }
+}
+
+tests {
+  test("Persists the updated username", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().username).to.equal(bru.getVar("playerUsername") + "_new");
+  });
+}

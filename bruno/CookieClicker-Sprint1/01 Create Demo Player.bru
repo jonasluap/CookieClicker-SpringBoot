@@ -1,0 +1,42 @@
+meta {
+  name: Create Demo Player
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/auth/signup
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": "{{playerUsername}}",
+    "password": "demo-sprint1-password"
+  }
+}
+
+script:pre-request {
+  const suffix = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  bru.setVar("playerUsername", "sprint1_" + suffix);
+  bru.setVar("upgradeName", "Sprint 1 Cursor " + suffix);
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    const account = res.getBody();
+    bru.setVar("playerId", account.playerId);
+    bru.setVar("accessToken", account.accessToken);
+  }
+}
+
+tests {
+  test("Creates an account and returns a Bearer token", function() {
+    expect(res.getStatus()).to.equal(201);
+    const account = res.getBody();
+    expect(account.playerId).to.be.a("number");
+    expect(account.accessToken).to.be.a("string").and.not.be.empty;
+    expect(account.tokenType).to.equal("Bearer");
+  });
+}

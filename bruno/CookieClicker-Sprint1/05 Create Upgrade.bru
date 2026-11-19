@@ -1,0 +1,39 @@
+meta {
+  name: Create Upgrade
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/upgrades
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "name": "{{upgradeName}}",
+    "description": "Adds two cookies per click",
+    "price": 2,
+    "clickBonus": 2,
+    "passiveBonus": 0
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("upgradeId", res.getBody().id);
+  }
+}
+
+tests {
+  test("Adds a two-cookie upgrade to the catalogue", function() {
+    expect(res.getStatus()).to.equal(201);
+    expect(res.getBody().price).to.equal(2);
+    expect(res.getBody().clickBonus).to.equal(2);
+  });
+}

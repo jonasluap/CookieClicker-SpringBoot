@@ -36,6 +36,7 @@ public class WeatherService {
 
     public PlayerWeather lookup(String city) {
         try {
+            // Geocoding turns the city name into the coordinates required by the forecast API.
             var locations = geocoding.get()
                     .uri(uri -> uri.path("/v1/search")
                             .queryParam("name", "{city}").queryParam("count", 1).queryParam("language", "fr")
@@ -61,6 +62,7 @@ public class WeatherService {
             if (current == null || current.temperature() == null || current.code() == null) {
                 throw unavailable();
             }
+            // The caller stores this snapshot on the player, where it can be reused for one hour.
             return new PlayerWeather(location.displayName(), current.temperature(), current.code(),
                     Instant.now().plus(Duration.ofHours(1)));
         } catch (RestClientException exception) {

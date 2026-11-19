@@ -18,7 +18,7 @@ Quand Spring Boot a démarré, ouvrez [http://localhost:8082/](http://localhost:
 
 Le profil `local` crée une base H2 intégrée dans `.local-data/` et conserve la progression entre les redémarrages. Pour le même mode dans IntelliJ, ajoutez `--spring.profiles.active=local` aux arguments de la configuration qui lance `BaseSpringBootApplication`. Docker utilise PostgreSQL et sert le jeu sur le port 8080.
 
-## Goal (Sprints 1–2)
+## Goal (Sprints 1–3)
 
 This repository includes a playable French Cookie Clicker browser game and its REST API. A player earns cookies by clicking, collects passive production, buys improvements, and appears on the leaderboard. Progress is saved in PostgreSQL or in the embedded H2 database with the local profile. Accounts use stateless Bearer token authentication.
 
@@ -32,7 +32,7 @@ This repository includes a playable French Cookie Clicker browser game and its R
 - Input validation, HTTP 200/201/204/400/404/409 and standardized JSON error messages.
 - `Player` **One-to-Many** `Purchase`; `Purchase` **Many-to-One** `Player` and `Upgrade`.
 - Layered architecture: Controller + DTO -> Service interface / implementation -> Repository -> Entity.
-- A Bruno collection (`bruno/CookieClicker-Sprint2/`) covering signup, authenticated CRUD, and gameplay.
+- Bruno collections for Sprints 1–3, covering CRUD, authenticated gameplay, the web entry point, weather, passive production and Swagger.
 - Signup/login returning signed JWT access tokens, validated by Spring Security's OAuth2 Resource Server support.
 - Passwords stored as BCrypt hashes; player endpoints require a Bearer token and only the token owner can access that player's account.
 - Responsive browser interface served at `http://localhost:8080/`, with account creation, gameplay, upgrades and leaderboard.
@@ -63,7 +63,8 @@ src/main/java/com/basespringboot/
   service/          AuthService.java, TokenService.java, PlayerService.java, UpgradeService.java
   service/impl/     PlayerServiceImpl.java, UpgradeServiceImpl.java
   exception/        Error response and centralized exception handling
-bruno/CookieClicker-Sprint2/   Bruno requests and local environment
+bruno/CookieClicker-API/       Complete Bruno API collection organized by feature
+bruno/CookieClicker-Sprint*/   Bruno test scenarios by sprint
 ```
 
 ## Prerequisites
@@ -241,15 +242,29 @@ Example response:
 }
 ```
 
-## Bruno — CRUD verification
+## Bruno — API collections
 
-1. Open Bruno and choose **Open Collection**.
-2. Select `bruno/CookieClicker-Sprint2`.
-3. Select the `local` environment (`baseUrl` = `http://localhost:8080`).
-4. Run `01 Players/01 Create Player` to sign up, or `01 Players/00 Login` if the account already exists; each stores `playerId` and `accessToken` as runtime variables.
-5. Run `02 Upgrades/01 Create Upgrade`; it stores the generated `upgradeId`.
-6. Run the GET/PUT/Click/Purchase requests. Run two clicks before purchase (the sample upgrade costs 2 cookies).
-7. Use the DELETE requests last; deleting an upgrade that has been purchased intentionally returns HTTP 409.
+| Collection | Coverage |
+|---|---|
+| `bruno/CookieClicker-API` | All 17 application API operations grouped into Authentication, Players, Upgrades, Gameplay and External API. |
+| `bruno/CookieClicker-Sprint1` | The original profile, upgrades, clicks, purchases, history and leaderboard scenarios, adapted to the current API. |
+| `bruno/CookieClicker-Sprint2` | Signup, login, JWT authentication, CRUD and gameplay. |
+| `bruno/CookieClicker-Sprint3` | Game page, Swagger, weather validation, weather bonuses, passive production and saved progress. |
+
+In Bruno, choose **Open Collection** and select a collection folder. Use the `local` environment for the Spring `local` profile on port `8082`. The complete API collection and the Sprint 1 and Sprint 3 collections also provide a `docker` environment for port `8080`.
+
+In **CookieClicker API**, set `playerUsername` and `playerPassword` in the environment, then start with **Signup** for a new account or **Login** for an existing account. Both requests save the JWT and player ID for the other folders. **Create Upgrade** saves the upgrade ID for the catalogue and purchase requests. The folders group related endpoints, so run individual requests in the order of the scenario you want to demonstrate. For example, click twice before buying the default demo upgrade. **Update Weather** uses the environment variable `weatherCity`.
+
+For Sprint 1 and Sprint 3, run the numbered requests in order using **Run Collection** or `bru run --env local` from the collection folder. The first account request creates a unique demo player and passes its ID and JWT to the following requests. The final requests delete the demo data. If you stop a run early, the numbered cleanup requests are available at the end of the same collection.
+
+The Sprint 1 collection uses `POST /api/auth/signup` to create a player. The current `GET /api/players` returns the signed-in player, and the leaderboard route lists the top ten balances. The Sprint 3 weather scenario uses the `weatherCity` environment variable, set to Paris by default, and needs access to Open-Meteo.
+
+### Sprint 2 walkthrough
+
+1. Run `01 Players/01 Create Player` to sign up, or `01 Players/00 Login` if the account already exists. Each stores `playerId` and `accessToken` as runtime variables.
+2. Run `02 Upgrades/01 Create Upgrade` to store the generated `upgradeId`.
+3. Run the GET/PUT/Click/Purchase requests. Run two clicks before purchase (the sample upgrade costs 2 cookies).
+4. Use the DELETE requests last. Deleting an upgrade that has been purchased returns HTTP 409.
 
 Requests that read `{{playerId}}` or `{{upgradeId}}` need the corresponding create request to run first in the same Bruno session. The `local` environment also provides fallback values of 1; adjust them if needed.
 
@@ -273,12 +288,12 @@ The smoke test creates a test account and upgrade and removes them afterwards. P
 - [ ] Add **all students' real first names and surnames** to this README.
 - [ ] Create a GitHub Project board with cards for player CRUD, upgrade CRUD, purchases, Bruno, documentation and testing; assign owners and update status. See `docs/SPRINT1_BOARD.md`.
 - [ ] Push commits regularly and clearly (`feat: add player CRUD`, `feat: add upgrades`, etc.).
-- [ ] Commit the Bruno collection with the source code.
+- [ ] Commit the Bruno collections with the source code.
 - [ ] Publish this repository and share its URL with the instructor / on Discord according to the course instructions.
 - [ ] Be ready to explain controllers, DTOs, transactions, JPA relations, status codes and request validation.
 
-### Proposed Sprint 3+
+### Future improvements
 
-- Future: automatic cookie production, front end, external free API, a **simulated** rewarded-ad flow, monitoring and load tests.
+- A **simulated** rewarded-ad flow, monitoring and load tests.
 
 Third-party advertising platforms have their own policies; the planned reward system is only a future concept.

@@ -1,0 +1,21 @@
+meta {
+  name: First Click
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/api/players/{{playerId}}/click
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+tests {
+  test("Credits the first cookie", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().cookies).to.equal(1);
+  });
+}

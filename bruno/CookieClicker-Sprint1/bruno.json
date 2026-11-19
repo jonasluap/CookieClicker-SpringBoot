@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "CookieClicker - Sprint 1",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

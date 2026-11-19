@@ -1,0 +1,18 @@
+meta {
+  name: Game JavaScript
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/app.js
+  auth: none
+}
+
+tests {
+  test("Serves the weather form handler and passive production timer", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.include("weather-form");
+    expect(res.getBody()).to.include("setInterval");
+  });
+}

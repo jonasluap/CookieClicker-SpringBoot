@@ -1,0 +1,35 @@
+meta {
+  name: Signup
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/auth/signup
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": "{{playerUsername}}",
+    "password": "{{playerPassword}}"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    const account = res.getBody();
+    bru.setVar("accessToken", account.accessToken);
+    bru.setVar("playerId", account.playerId);
+    bru.setVar("playerUsername", account.username);
+  }
+}
+
+tests {
+  test("HTTP 201", function() {
+    expect(res.getStatus()).to.equal(201);
+    expect(res.getBody().accessToken).to.be.a("string").and.not.be.empty;
+    expect(res.getBody().playerId).to.be.a("number");
+  });
+}

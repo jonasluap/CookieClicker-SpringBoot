@@ -1,0 +1,29 @@
+meta {
+  name: Update Player
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{baseUrl}}/api/players/{{playerId}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "username": "{{newPlayerUsername}}"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    bru.setVar("playerUsername", res.getBody().username);
+  }
+}
+
+tests {
+  test("HTTP 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

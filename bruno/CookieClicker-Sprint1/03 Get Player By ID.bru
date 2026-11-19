@@ -1,0 +1,21 @@
+meta {
+  name: Get Player By ID
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/players/{{playerId}}
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+tests {
+  test("Returns the requested player profile", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().id).to.equal(Number(bru.getVar("playerId")));
+  });
+}

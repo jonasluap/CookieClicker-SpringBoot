@@ -1,0 +1,24 @@
+meta {
+  name: Update Weather
+  type: http
+  seq: 1
+}
+
+put {
+  url: {{baseUrl}}/api/players/{{playerId}}/weather
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "city": "{{weatherCity}}"
+  }
+}
+
+tests {
+  test("HTTP 200", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().weather.place).to.be.a("string").and.not.be.empty;
+  });
+}

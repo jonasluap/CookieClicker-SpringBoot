@@ -24,6 +24,8 @@ import java.nio.charset.StandardCharsets;
 
 @Configuration
 public class SecurityConfig {
+    // The game page, authentication endpoints and Swagger docs are available before sign-in.
+    // Protected endpoints verify the Bearer token on each request.
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http

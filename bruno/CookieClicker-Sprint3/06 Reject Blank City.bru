@@ -1,0 +1,27 @@
+meta {
+  name: Reject Blank City
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{baseUrl}}/api/players/{{playerId}}/weather
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "city": ""
+  }
+}
+
+tests {
+  test("Validates the city before calling Open-Meteo", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+}
