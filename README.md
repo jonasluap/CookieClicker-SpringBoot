@@ -6,17 +6,17 @@ University project (R3.03 Agile Development) built from the supplied `baseSpring
 **Repository:** https://github.com/jonasluap/CookieClicker-SpringBoot  
 **Tech stack:** Java 21 · Spring Boot 4.1.1 · Spring Data JPA · PostgreSQL 16 · Docker Compose · Bruno
 
-## Tester le jeu dans le navigateur
+## Run the game in your browser
 
-Avec Java 21, lancez cette commande à la racine du projet.
+With Java 21 installed, run this command from the project root.
 
 ```bash
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
-Quand Spring Boot a démarré, ouvrez [http://localhost:8082/](http://localhost:8082/) et choisissez **Créer un compte**. Spring Boot sert le HTML, le CSS, le JavaScript et l’API à la même adresse.
+Once Spring Boot has started, open [http://localhost:8082/](http://localhost:8082/) and create an account. Spring Boot serves the HTML, CSS, JavaScript and API from the same address.
 
-Le profil `local` crée une base H2 intégrée dans `.local-data/` et conserve la progression entre les redémarrages. Pour le même mode dans IntelliJ, ajoutez `--spring.profiles.active=local` aux arguments de la configuration qui lance `BaseSpringBootApplication`. Docker utilise PostgreSQL et sert le jeu sur le port 8080.
+The `local` profile creates an embedded H2 database in `.local-data/` and saves your progress across restarts. To use this profile in IntelliJ, add `--spring.profiles.active=local` to the program arguments for `BaseSpringBootApplication`. Docker uses PostgreSQL and serves the game on port 8080.
 
 ## Goal (Sprints 1–3)
 
@@ -40,17 +40,17 @@ This repository includes a playable French Cookie Clicker browser game and its R
 
 **Important rules:** clients cannot set their own cookie balance or buy upgrades without enough cookies. Each click adds `cookiesPerClick` cookies. Passive production is credited by the game while the player is online. An upgrade can grant `clickBonus`, `passiveBonus`, or both.
 
-### Bonus météo
+### Weather bonus
 
-Dans le jeu, recherchez une ville dans **Météo locale**. Le serveur récupère les conditions auprès d’Open-Meteo et ajoute le bonus à chaque clic et à chaque seconde de production passive.
+Search for a city in the local weather section of the game. The server fetches the current conditions from Open-Meteo and adds the weather bonus to every click and every second of passive production.
 
-| Conditions | Cookies supplémentaires par clic et par seconde |
+| Conditions | Extra cookies per click and per second |
 |---|---:|
-| Ciel dégagé ou nuageux | +1 |
-| Brouillard, pluie ou neige | +2 |
-| Orage | +3 |
+| Clear or cloudy skies | +1 |
+| Fog, rain or snow | +2 |
+| Thunderstorms | +3 |
 
-Le bonus est valable une heure et s’ajoute aux améliorations achetées. Recherchez à nouveau la ville pour actualiser la météo après expiration.
+The weather bonus lasts one hour and stacks with purchased upgrades. Search for the city again to refresh the weather after the bonus expires.
 
 ## Directory layout
 
@@ -138,14 +138,14 @@ Both return `accessToken`, `tokenType` (`Bearer`), `expiresIn` (seconds), `playe
 
 ### Swagger UI
 
-Ouvre **Fournée infinie — API Cookie Clicker** pour consulter les routes et les tester depuis le navigateur.
+Open **Fournée infinie — API Cookie Clicker** to browse and test the API endpoints in your browser.
 
-- Profil `local` sur [localhost:8082/swagger-ui.html](http://localhost:8082/swagger-ui.html).
-- Docker sur [localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html).
+- The `local` profile uses [localhost:8082/swagger-ui.html](http://localhost:8082/swagger-ui.html).
+- Docker uses [localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html).
 
-Dans **Authentification**, ouvre `POST /api/auth/signup` ou `POST /api/auth/login`, puis clique sur **Try it out** et **Execute**. Copie la valeur d’`accessToken` dans **Authorize**. Swagger ajoute l’en-tête Bearer aux requêtes protégées. Utilise le `playerId` renvoyé dans les routes qui le demandent.
+Expand `POST /api/auth/signup` or `POST /api/auth/login`, then click **Try it out** and **Execute**. Paste the `accessToken` value into **Authorize**. Swagger adds the Bearer header to protected requests. Use the returned `playerId` for endpoints that require it.
 
-La spécification OpenAPI est disponible sur `/v3/api-docs` au format JSON et sur `/v3/api-docs.yaml` au format YAML.
+The OpenAPI specification is available as JSON at `/v3/api-docs` and as YAML at `/v3/api-docs.yaml`.
 
 ### Players
 
