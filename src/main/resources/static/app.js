@@ -1,6 +1,7 @@
 (() => {
   const $ = (selector) => document.querySelector(selector);
   const state = { token: localStorage.getItem('cookieToken'), playerId: localStorage.getItem('cookiePlayerId'), username: localStorage.getItem('cookieUsername'), mode: 'login', player: null, upgrades: [] };
+  const savedWeather = JSON.parse(localStorage.getItem('cookieWeather') || 'null');
   const authScreen = $('#auth-screen'), gameScreen = $('#game-screen');
   const number = (n) => new Intl.NumberFormat('fr-FR').format(n);
   let toastTimer;
@@ -21,6 +22,47 @@
   function showGame() { authScreen.classList.add('hidden'); gameScreen.classList.remove('hidden'); $('#logout').classList.remove('hidden'); $('#account-name').textContent = state.username || 'Joueur'; }
   function logout(show = true) { state.token = null; state.playerId = null; state.username = null; localStorage.removeItem('cookieToken'); localStorage.removeItem('cookiePlayerId'); localStorage.removeItem('cookieUsername'); if (show) showAuth(); }
   function iconFor(name) { const icons = ['🖱️','🥣','🧑‍🍳','🔥','🏭','🚀']; return icons[Math.abs([...name].reduce((sum, char) => sum + char.charCodeAt(0), 0)) % icons.length]; }
+
+  const weatherDescriptions = {
+    0: ['☀️', 'Ciel dégagé — parfait pour une fournée ensoleillée.'],
+    1: ['🌤️', 'Principalement dégagé — la journée s’annonce douce.'],
+    2: ['⛅', 'Quelques nuages — idéal pour une pause goûter.'],
+    3: ['☁️', 'Ciel couvert — le four réchauffe l’ambiance.'],
+    45: ['🌫️', 'Brouillard — cookies réconfortants recommandés.'], 48: ['🌫️', 'Brouillard givrant — restez au chaud.'],
+    51: ['🌦️', 'Bruine légère — parfait pour rester pâtisser.'], 53: ['🌦️', 'Bruine — une fournée mettra du soleil.'], 55: ['🌧️', 'Bruine dense — journée idéale pour les cookies.'],
+    56: ['🌧️', 'Bruine verglaçante légère — restez bien au chaud.'], 57: ['🌧️', 'Bruine verglaçante — un chocolat chaud s’impose.'],
+    61: ['🌧️', 'Pluie légère — parfait pour une pause gourmande.'], 63: ['🌧️', 'Pluie — le four devient votre meilleur ami.'], 65: ['🌧️', 'Forte pluie — journée parfaite pour les cookies.'],
+    66: ['🌧️', 'Pluie verglaçante légère — pâtissez au chaud.'], 67: ['🌧️', 'Pluie verglaçante — restez à l’abri.'],
+    71: ['🌨️', 'Quelques flocons — sortez les cookies tout chauds.'], 73: ['🌨️', 'Neige — une fournée bien chaude s’impose.'], 75: ['❄️', 'Forte neige — restez au chaud avec vos cookies.'], 77: ['🌨️', 'Grains de neige — ambiance cocooning.'],
+    80: ['🌦️', 'Averses passagères — profitez de l’accalmie pour pâtisser.'], 81: ['🌧️', 'Averses — le four tourne à plein régime.'], 82: ['⛈️', 'Fortes averses — journée cocooning.'],
+    85: ['🌨️', 'Averses de neige — cookies tout juste sortis du four.'], 86: ['❄️', 'Fortes averses de neige — restez bien au chaud.'],
+    95: ['⛈️', 'Orage — mieux vaut rester à l’intérieur.'], 96: ['🌩️', 'Orage et grêle — le bon moment pour une pause.'], 99: ['🌩️', 'Orage violent et grêle — restez à l’abri.']
+  };
+  function renderWeather(weather) {
+    const condition = weatherDescriptions[weather.code] || ['🌡️', 'Conditions météo du moment.'];
+    $('#weather-icon').textContent = condition[0]; $('#weather-place').textContent = weather.place;
+    $('#weather-description').textContent = condition[1]; $('#weather-temperature').textContent = `${Math.round(weather.temperature)}°C`;
+  }
+  async function loadWeather(city) {
+    const message = $('#weather-message'); const button = $('.weather-button');
+    button.disabled = true; message.textContent = 'Recherche…';
+    try {
+      const geocodeUrl = new URL('https://geocoding-api.open-meteo.com/v1/search');
+      geocodeUrl.search = new URLSearchParams({ name: city, count: '1', language: 'fr', format: 'json' });
+      const geocodeResponse = await fetch(geocodeUrl);
+      if (!geocodeResponse.ok) throw new Error('Service météo momentanément indisponible.');
+      const geocode = await geocodeResponse.json(); const place = geocode.results?.[0];
+      if (!place) throw new Error('Ville introuvable. Essayez un autre nom.');
+      const forecastUrl = new URL('https://api.open-meteo.com/v1/forecast');
+      forecastUrl.search = new URLSearchParams({ latitude: String(place.latitude), longitude: String(place.longitude), current: 'temperature_2m,weather_code', timezone: 'auto' });
+      const forecastResponse = await fetch(forecastUrl);
+      if (!forecastResponse.ok) throw new Error('Impossible de récupérer la météo pour cette ville.');
+      const forecast = await forecastResponse.json();
+      const weather = { place: [place.name, place.admin1, place.country].filter(Boolean).join(', '), temperature: forecast.current.temperature_2m, code: forecast.current.weather_code };
+      renderWeather(weather); localStorage.setItem('cookieWeather', JSON.stringify(weather)); message.textContent = 'Météo mise à jour.';
+    } catch (error) { message.textContent = error.message || 'Météo indisponible. Le jeu reste accessible.'; }
+    finally { button.disabled = false; }
+  }
 
   async function refresh() {
     $('#status').textContent = 'Synchronisation…';
@@ -79,6 +121,8 @@
   $('#cookie').addEventListener('click', clickCookie);
   $('#logout').addEventListener('click', () => logout());
   $('#refresh').addEventListener('click', () => refresh().catch((error) => notify(error.message)));
+  $('#weather-form').addEventListener('submit', (event) => { event.preventDefault(); const city = $('#weather-city').value.trim(); if (city) loadWeather(city); });
+  if (savedWeather && typeof savedWeather.temperature === 'number') renderWeather(savedWeather);
 
   window.setInterval(async () => {
     if (!state.token || !state.player || state.player.cookiesPerSecond < 1) return;

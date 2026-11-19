@@ -35,6 +35,11 @@
 
     <section id="game-screen" class="game hidden">
       <div class="game-heading"><div><p class="eyebrow">VOTRE EMPIRE</p><h1>La grande <em>fournée</em></h1></div><button id="refresh" class="icon-button" title="Actualiser">↻</button></div>
+      <section class="weather-card" aria-label="Météo locale">
+        <div class="weather-main"><span id="weather-icon" class="weather-icon" aria-hidden="true">🌤️</span><div><p class="eyebrow">MÉTÉO LOCALE</p><div id="weather-place" class="weather-place">Choisissez une ville</div><div id="weather-description" class="weather-description">Une ambiance du jour pour votre fournée.</div></div><strong id="weather-temperature" class="weather-temperature">—°</strong></div>
+        <form id="weather-form" class="weather-search"><label class="sr-only" for="weather-city">Ville</label><input id="weather-city" name="city" placeholder="Rechercher une ville…" maxlength="80" autocomplete="off"><button class="weather-button" type="submit">Voir la météo</button><span id="weather-message" class="weather-message" role="status"></span></form>
+        <div class="weather-credit">Données météo : <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a> · CC BY 4.0</div>
+      </section>
       <div class="game-grid">
         <section class="panel bakery">
           <div class="balance"><span class="cookie-dot">●</span><strong id="cookies">0</strong><span>cookies</span></div>
